@@ -4,8 +4,10 @@ import type { ScrapedDataItem } from '@/types';
 import { dataSourcesStore } from '@/lib/db'; // To map dataSourceName if needed for initial load
 
 async function getScrapedData(): Promise<ScrapedDataItem[]> {
+  const port = process.env.PORT || 3000;
+  const baseUrl = `http://localhost:${port}`;
   // For server-side fetches to own API routes, relative paths are preferred.
-  const res = await fetch('/api/scraped-items', { cache: 'no-store' });
+  const res = await fetch(`${baseUrl}/api/scraped-items`, { cache: 'no-store' });
   
   if (!res.ok) {
     console.error('Failed to fetch scraped items initial data:', await res.text());
