@@ -1,3 +1,4 @@
+
 "use client";
 
 import { MoreHorizontal, Pencil, Trash2, Sparkles, Loader2 } from "lucide-react";
@@ -38,8 +39,21 @@ export function DataTableRowActions<TData extends ScrapedDataItem>({
   const [isEnriching, setIsEnriching] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Access actions from table.meta
-  const { editItem, deleteItem, enrichItem } = row.table.options.meta as {
+  // Safely access actions from table.meta
+  const meta = row?.table?.options?.meta;
+
+  if (!meta) {
+    console.error("Table meta information is not available for row actions.", { rowId: row.id });
+    // Return null or a disabled placeholder if meta is not available
+    return (
+      <Button variant="ghost" className="flex h-8 w-8 p-0" disabled>
+        <MoreHorizontal className="h-4 w-4" />
+        <span className="sr-only">Open menu (unavailable)</span>
+      </Button>
+    );
+  }
+
+  const { editItem, deleteItem, enrichItem } = meta as {
     editItem: (id: string) => void;
     deleteItem: (id: string) => void;
     enrichItem: (id: string) => void;
