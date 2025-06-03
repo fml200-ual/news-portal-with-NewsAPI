@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Maps port 3000 on the host to port 3000 in the container
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # For server-side fetch requests within the app (e.g. from Server Component to API route)
+      # This should be the URL accessible from within the Docker network if services call each other.
+      # For calls from client-side, it will be the browser's current host.
+      # If running standalone, localhost:3000 is fine for internal SSR fetches from server to itself.
+      NEXT_PUBLIC_APP_URL: http://localhost:3000 
+      # Add any other environment variables your app needs:
+      # EXTERNAL_API_KEY: your_api_key
+    # volumes: # Uncomment for development with hot-reloading (not for production image)
+    #  - .:/app
+    #  - /app/node_modules # Don't mount node_modules from host
+    #  - /app/.next
+    restart: unless-stopped
+    # healthcheck: # Optional: add a healthcheck
+    #   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"] # Create a /api/health endpoint
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 30s # Give app time to start
