@@ -17,17 +17,17 @@ if (process.env.NODE_ENV === 'development' && dataSourcesStore.length === 0) {
   
   dataSourcesStore.push({
     id: initialDsId1,
-    name: 'Example News Site',
+    name: 'Tech News Blog',
     type: 'url',
-    value: 'https://example.com/news',
+    value: 'https://tech.example.com/latest',
     status: 'idle',
     createdAt: new Date().toISOString(),
   });
   dataSourcesStore.push({
     id: initialDsId2,
-    name: 'Public API Endpoint',
+    name: 'News API (Top Headlines US)',
     type: 'api',
-    value: 'https://api.publicapis.org/entries',
+    value: 'https://newsapi.org/v2/top-headlines?country=us&apiKey=YOUR_API_KEY', // Replace YOUR_API_KEY
     status: 'idle',
     createdAt: new Date().toISOString(),
   });
@@ -35,19 +35,34 @@ if (process.env.NODE_ENV === 'development' && dataSourcesStore.length === 0) {
   scrapedDataStore.push({
     id: getNextScrapedDataId(),
     dataSourceId: initialDsId1,
-    dataSourceName: 'Example News Site',
-    rawData: JSON.stringify({ title: 'Mock Article 1', content: 'Some news content.' }),
+    dataSourceName: 'Tech News Blog',
+    rawData: JSON.stringify({ 
+      title: 'AI Takes Over Software Development', 
+      content: 'In a surprising turn of events, AI has become the primary force in software development...',
+      author: 'Tech Reporter',
+      publishedAt: new Date(Date.now() - 86400000).toISOString() // Yesterday
+    }),
     isEnriched: false,
-    createdAt: new Date().toISOString(),
-    lastUpdatedAt: new Date().toISOString(),
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    lastUpdatedAt: new Date(Date.now() - 86400000).toISOString(),
   });
    scrapedDataStore.push({
     id: getNextScrapedDataId(),
     dataSourceId: initialDsId2,
-    dataSourceName: 'Public API Endpoint',
-    rawData: JSON.stringify({ API: "AdoptAPet", Description: "Resource to help get pets adopted" }),
+    dataSourceName: 'News API (Top Headlines US)',
+    rawData: JSON.stringify({ 
+      title: 'Global Markets Surge Amidst Economic Optimism', 
+      description: 'Stock markets around the world experienced a significant uplift today as new economic data suggests a strong recovery.',
+      url: 'https://news.example.com/market-surge-2024',
+      source: { name: 'Global News Network' },
+      publishedAt: new Date().toISOString() 
+    }),
     isEnriched: true,
     sentiment: 'positive',
+    processedData: JSON.stringify({
+      summary: 'Positive economic indicators led to a global stock market rally.',
+      tags: ['economy', 'stocks', 'optimism']
+    }),
     createdAt: new Date().toISOString(),
     lastUpdatedAt: new Date().toISOString(),
   });

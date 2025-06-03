@@ -27,7 +27,7 @@ export function ScrapedDataManager({ initialScrapedData }: ScrapedDataManagerPro
     setError(null);
     try {
       const response = await fetch("/api/scraped-items", { cache: 'no-store' });
-      if (!response.ok) throw new Error("Failed to fetch scraped data");
+      if (!response.ok) throw new Error("Failed to fetch news articles");
       const data = await response.json();
       setScrapedData(data);
     } catch (err) {
@@ -49,9 +49,9 @@ export function ScrapedDataManager({ initialScrapedData }: ScrapedDataManagerPro
       const response = await fetch(`/api/scraped-items/${item.id}`, { method: "DELETE" });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete item");
+        throw new Error(errorData.message || "Failed to delete article");
       }
-      toast({ title: "Success", description: "Item deleted." });
+      toast({ title: "Success", description: "Article deleted." });
       fetchScrapedData(); // Refresh
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -64,9 +64,9 @@ export function ScrapedDataManager({ initialScrapedData }: ScrapedDataManagerPro
       const response = await fetch(`/api/scraped-items/${item.id}/enrich`, { method: "POST" });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to enrich item");
+        throw new Error(errorData.message || "Failed to enrich article");
       }
-      toast({ title: "Success", description: `Item ${item.id} enrichment process successful.` });
+      toast({ title: "Success", description: `Article ${item.id} enrichment process successful.` });
       fetchScrapedData(); // Refresh
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -93,7 +93,7 @@ export function ScrapedDataManager({ initialScrapedData }: ScrapedDataManagerPro
     return (
        <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Fetching Data</AlertTitle>
+        <AlertTitle>Error Fetching Articles</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -112,9 +112,9 @@ export function ScrapedDataManager({ initialScrapedData }: ScrapedDataManagerPro
         <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
           <DialogContent className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle className="font-headline">Edit Scraped Item</DialogTitle>
+              <DialogTitle className="font-headline">Edit News Article</DialogTitle>
               <DialogDescription>
-                Modify the details of the scraped item. Make sure raw data is valid JSON.
+                Modify the details of the news article. Make sure article data is valid JSON.
               </DialogDescription>
             </DialogHeader>
             <EditDataForm

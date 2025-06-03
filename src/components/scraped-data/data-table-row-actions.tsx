@@ -49,10 +49,10 @@ export function DataTableRowActions<TData extends ScrapedDataItem>({
   const handleEnrich = async () => {
     setIsEnriching(true);
     try {
-      await enrichItem(item.id); // This function should be passed from the parent and handle API call / state update
-      toast({ title: "Success", description: "Item enrichment process started." });
+      await enrichItem(item.id); 
+      toast({ title: "Success", description: "Article enrichment process started." });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to enrich item.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to enrich article.", variant: "destructive" });
     } finally {
       setIsEnriching(false);
     }
@@ -92,7 +92,7 @@ export function DataTableRowActions<TData extends ScrapedDataItem>({
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the scraped item.
+            This action cannot be undone. This will permanently delete the news article.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -101,10 +101,10 @@ export function DataTableRowActions<TData extends ScrapedDataItem>({
             onClick={async () => {
               setIsDeleting(true);
               try {
-                await deleteItem(item.id); // This function should be passed from the parent
-                toast({ title: "Success", description: "Item deleted." });
+                await deleteItem(item.id); 
+                toast({ title: "Success", description: "Article deleted." });
               } catch (error) {
-                toast({ title: "Error", description: "Failed to delete item.", variant: "destructive" });
+                toast({ title: "Error", description: "Failed to delete article.", variant: "destructive" });
               } finally {
                 setIsDeleting(false);
               }

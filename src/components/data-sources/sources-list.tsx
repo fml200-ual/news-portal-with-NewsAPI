@@ -39,17 +39,17 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
       });
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || "Failed to initiate scraping");
+        throw new Error(result.message || "Failed to initiate fetching articles");
       }
       toast({
-        title: "Scraping Initiated",
+        title: "Fetching Articles Initiated",
         description: result.message,
       });
       onScrapeComplete(); // Refresh data sources list to show status update and potentially scraped data list
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       toast({
-        title: "Scraping Error",
+        title: "Fetching Error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -66,11 +66,11 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete data source");
+        throw new Error(errorData.message || "Failed to delete news source");
       }
       toast({
         title: "Success",
-        description: "Data source deleted successfully.",
+        description: "News source deleted successfully.",
       });
       onSourceDeleted();
     } catch (error) {
@@ -86,7 +86,7 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
   };
 
   if (dataSources.length === 0) {
-    return <p className="text-muted-foreground text-center py-8">No data sources added yet. Add one to get started!</p>;
+    return <p className="text-muted-foreground text-center py-8">No news sources added yet. Add one to get started!</p>;
   }
 
   return (
@@ -113,7 +113,7 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
             </p>
             {source.lastScrapedAt && (
               <p className="text-xs text-muted-foreground">
-                Last Scraped: {format(parseISO(source.lastScrapedAt), "MMM d, yyyy HH:mm")}
+                Last Fetched: {format(parseISO(source.lastScrapedAt), "MMM d, yyyy HH:mm")}
               </p>
             )}
           </CardContent>
@@ -129,7 +129,7 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
               ) : (
                 <DownloadCloud className="mr-2 h-4 w-4" />
               )}
-              Scrape
+              Fetch Articles
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -146,8 +146,8 @@ export function SourcesList({ dataSources, onSourceDeleted, onScrapeComplete }: 
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the data source
-                    and all associated scraped data.
+                    This action cannot be undone. This will permanently delete the news source
+                    and all associated articles.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

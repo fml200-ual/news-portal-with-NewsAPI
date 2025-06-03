@@ -25,9 +25,9 @@ export default async function DataSourcesPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
-        <h1 className="text-4xl font-headline font-bold text-primary">Data Sources</h1>
+        <h1 className="text-4xl font-headline font-bold text-primary">News Sources</h1>
         <p className="text-lg text-muted-foreground mt-2">
-          Manage your target websites and APIs. Add new sources or trigger scraping for existing ones.
+          Manage your news APIs and websites. Add new sources or trigger fetching for existing ones.
         </p>
       </header>
       <DataSourcesManager initialDataSources={initialDataSources} />

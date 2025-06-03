@@ -36,7 +36,7 @@ export const columns: ColumnDef<ScrapedDataItem>[] = [
   {
     accessorKey: "id",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Item ID" />
+      <DataTableColumnHeader column={column} title="Article ID" />
     ),
     cell: ({ row }) => <div className="w-[80px] truncate">{row.getValue("id")}</div>,
     enableSorting: false, // Usually IDs are not sorted by user
@@ -52,13 +52,13 @@ export const columns: ColumnDef<ScrapedDataItem>[] = [
   },
   {
     accessorKey: "rawData",
-    header: "Raw Data",
+    header: "Content Snippet",
     cell: ({ row }) => {
       const rawData = row.getValue("rawData") as string;
       try {
         const parsed = JSON.parse(rawData);
-        // Show a snippet or key field
-        const displayValue = parsed.title || parsed.API || Object.values(parsed)[0]?.toString() || "View Details";
+        // Show a snippet or key field like title or description
+        const displayValue = parsed.title || parsed.headline || parsed.description || Object.values(parsed)[0]?.toString() || "View Details";
         return <div className="max-w-[300px] truncate" title={displayValue.length > 40 ? displayValue : ''}>{displayValue.substring(0,40)}{displayValue.length > 40 ? '...' : ''}</div>;
       } catch {
         return <div className="max-w-[300px] truncate" title={rawData.length > 40 ? rawData : ''}>{rawData.substring(0,40)}{rawData.length > 40 ? '...' : ''}</div>;
@@ -87,7 +87,7 @@ export const columns: ColumnDef<ScrapedDataItem>[] = [
         const sentiment: string | undefined = row.getValue("sentiment");
         if (!sentiment) return <span className="text-muted-foreground">-</span>;
         let variant: "default" | "secondary" | "destructive" = "secondary";
-        if (sentiment === 'positive') variant = 'default'; // 'default' for green-ish with default theme
+        if (sentiment === 'positive') variant = 'default'; 
         if (sentiment === 'negative') variant = 'destructive';
         return <Badge variant={variant} className="capitalize">{sentiment}</Badge>;
     },

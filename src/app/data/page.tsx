@@ -34,9 +34,9 @@ export default async function ScrapedDataPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
-        <h1 className="text-4xl font-headline font-bold text-primary">Scraped Data</h1>
+        <h1 className="text-4xl font-headline font-bold text-primary">News Articles</h1>
         <p className="text-lg text-muted-foreground mt-2">
-          View, filter, and manage all data collected from your sources. Edit or enrich items as needed.
+          View, filter, and manage all news articles collected from your sources. Edit or enrich items as needed.
         </p>
       </header>
       <ScrapedDataManager initialScrapedData={initialScrapedData} />

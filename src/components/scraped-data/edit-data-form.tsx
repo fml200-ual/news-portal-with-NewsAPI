@@ -56,12 +56,12 @@ export function EditDataForm({ item, onSave, onCancel }: EditDataFormProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update item");
+        throw new Error(errorData.message || "Failed to update article");
       }
 
       toast({
         title: "Success!",
-        description: "Item updated successfully.",
+        description: "Article updated successfully.",
       });
       onSave();
     } catch (error) {
@@ -84,9 +84,9 @@ export function EditDataForm({ item, onSave, onCancel }: EditDataFormProps) {
           name="rawData"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Raw Data (JSON)</FormLabel>
+              <FormLabel>Article Data (JSON)</FormLabel>
               <FormControl>
-                <Textarea placeholder='{"key": "value"}' {...field} rows={8} />
+                <Textarea placeholder='{"title": "Example Article", "content": "..."}' {...field} rows={8} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -97,9 +97,9 @@ export function EditDataForm({ item, onSave, onCancel }: EditDataFormProps) {
           name="processedData"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Processed Data (JSON, optional)</FormLabel>
+              <FormLabel>Processed/Enriched Data (JSON, optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder='{"processedKey": "processedValue"}' {...field} rows={5} />
+                <Textarea placeholder='{"summary": "...", "tags": []}' {...field} rows={5} />
               </FormControl>
               <FormMessage />
             </FormItem>

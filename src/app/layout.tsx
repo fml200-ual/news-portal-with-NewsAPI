@@ -4,8 +4,8 @@ import { Navbar } from '@/components/layout/navbar';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'DataHarvester',
-  description: 'Web scraping and data enrichment platform',
+  title: 'News Aggregator',
+  description: 'Your central hub for news articles and updates.',
 };
 
 export default function RootLayout({
