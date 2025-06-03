@@ -1,10 +1,11 @@
+
 import { ScrapedDataManager } from '@/components/scraped-data/scraped-data-manager';
 import type { ScrapedDataItem } from '@/types';
 import { dataSourcesStore } from '@/lib/db'; // To map dataSourceName if needed for initial load
 
 async function getScrapedData(): Promise<ScrapedDataItem[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/scraped-items`, { cache: 'no-store' });
+  // For server-side fetches to own API routes, relative paths are preferred.
+  const res = await fetch('/api/scraped-items', { cache: 'no-store' });
   
   if (!res.ok) {
     console.error('Failed to fetch scraped items initial data:', await res.text());

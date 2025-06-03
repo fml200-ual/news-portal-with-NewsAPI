@@ -1,10 +1,11 @@
+
 import { DataSourcesManager } from '@/components/data-sources/data-sources-manager';
 import type { DataSource } from '@/types';
 
 async function getDataSources(): Promise<DataSource[]> {
-  // In a real app, use environment variables for the base URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const res = await fetch(`${baseUrl}/api/datasources`, { cache: 'no-store' });
+  // For server-side fetches to own API routes, relative paths are preferred.
+  // Next.js will automatically use the correct internal host and port.
+  const res = await fetch('/api/datasources', { cache: 'no-store' });
   
   if (!res.ok) {
     console.error('Failed to fetch data sources initial data:', await res.text());
