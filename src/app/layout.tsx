@@ -1,11 +1,12 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Navbar } from '@/components/layout/navbar';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'News Aggregator',
-  description: 'Your central hub for news articles and updates.',
+  title: 'News Portal', // Updated title
+  description: 'Your daily source for categorized news articles.', // Updated description
 };
 
 export default function RootLayout({

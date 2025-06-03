@@ -1,75 +1,75 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
-import { scrapedDataStore } from '@/lib/db';
-import type { ScrapedDataItem } from '@/types';
+import { newsArticleStore } from '@/lib/db'; // Updated store name
+import type { NewsArticle } from '@/types'; // Updated type
 import { z } from 'zod';
 
-const scrapedItemUpdateSchema = z.object({
-  rawData: z.string().optional().refine(val => {
-    if (val === undefined) return true;
-    try { JSON.parse(val); return true; } catch { return false; }
-  }, { message: "Raw data must be valid JSON string if provided" }),
-  processedData: z.string().optional().refine(val => {
-    if (val === undefined) return true;
-    try { JSON.parse(val); return true; } catch { return false; }
-  }, { message: "Processed data must be valid JSON string if provided" }),
-  // Add other fields that can be edited
+// Schema for updating parts of a news article (less likely to be used in a simple portal)
+const newsArticleUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  category: z.string().optional(),
+  isEnriched: z.boolean().optional(),
+  sentiment: z.enum(['positive', 'negative', 'neutral']).optional().nullable(),
+  summary: z.string().optional().nullable(),
 });
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const item = scrapedDataStore.find(it => it.id === params.id);
+    const item = newsArticleStore.find(it => it.id === params.id);
     if (!item) {
-      return NextResponse.json({ message: "Scraped item not found" }, { status: 404 });
+      return NextResponse.json({ message: "News article not found" }, { status: 404 });
     }
     return NextResponse.json(item);
   } catch (error) {
-    console.error(`Failed to fetch scraped item ${params.id}:`, error);
-    return NextResponse.json({ message: "Failed to fetch scraped item" }, { status: 500 });
+    console.error(`Failed to fetch news article ${params.id}:`, error);
+    return NextResponse.json({ message: "Failed to fetch news article" }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await request.json();
-    const validation = scrapedItemUpdateSchema.safeParse(body);
+    const validation = newsArticleUpdateSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json({ message: "Invalid input", errors: validation.error.format() }, { status: 400 });
     }
 
-    const itemIndex = scrapedDataStore.findIndex(it => it.id === params.id);
+    const itemIndex = newsArticleStore.findIndex(it => it.id === params.id);
     if (itemIndex === -1) {
-      return NextResponse.json({ message: "Scraped item not found" }, { status: 404 });
+      return NextResponse.json({ message: "News article not found" }, { status: 404 });
     }
 
-    const updatedItem = { 
-      ...scrapedDataStore[itemIndex], 
+    const updatedItem: NewsArticle = { 
+      ...newsArticleStore[itemIndex], 
       ...validation.data,
       lastUpdatedAt: new Date().toISOString(),
     };
-    scrapedDataStore[itemIndex] = updatedItem;
+    newsArticleStore[itemIndex] = updatedItem;
     
     return NextResponse.json(updatedItem);
   } catch (error) {
-    console.error(`Failed to update scraped item ${params.id}:`, error);
+    console.error(`Failed to update news article ${params.id}:`, error);
     if (error instanceof SyntaxError) {
         return NextResponse.json({ message: "Invalid JSON payload" }, { status: 400 });
     }
-    return NextResponse.json({ message: "Failed to update scraped item" }, { status: 500 });
+    return NextResponse.json({ message: "Failed to update news article" }, { status: 500 });
   }
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const itemIndex = scrapedDataStore.findIndex(it => it.id === params.id);
+    const itemIndex = newsArticleStore.findIndex(it => it.id === params.id);
     if (itemIndex === -1) {
-      return NextResponse.json({ message: "Scraped item not found" }, { status: 404 });
+      return NextResponse.json({ message: "News article not found" }, { status: 404 });
     }
 
-    scrapedDataStore.splice(itemIndex, 1);
-    return NextResponse.json({ message: "Scraped item deleted" }, { status: 200 });
+    newsArticleStore.splice(itemIndex, 1);
+    return NextResponse.json({ message: "News article deleted" }, { status: 200 });
   } catch (error) {
-    console.error(`Failed to delete scraped item ${params.id}:`, error);
-    return NextResponse.json({ message: "Failed to delete scraped item" }, { status: 500 });
+    console.error(`Failed to delete news article ${params.id}:`, error);
+    return NextResponse.json({ message: "Failed to delete news article" }, { status: 500 });
   }
 }

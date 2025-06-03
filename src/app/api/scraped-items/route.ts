@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server';
-import { scrapedDataStore, dataSourcesStore } from '@/lib/db';
-import type { ScrapedDataItem } from '@/types';
 
-export async function GET() {
+import { NextResponse, type NextRequest } from 'next/server';
+import { newsArticleStore, dataSourcesStore } from '@/lib/db'; // Updated store name
+import type { NewsArticle } from '@/types'; // Updated type
+
+export async function GET(request: NextRequest) {
   try {
     // Add a slight delay to simulate network latency
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Enrich with dataSourceName if not present (for display convenience)
-    const enrichedScrapedData = scrapedDataStore.map(item => {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+
+    let articlesToReturn = newsArticleStore.map(item => {
       if (!item.dataSourceName) {
         const source = dataSourcesStore.find(ds => ds.id === item.dataSourceId);
         return { ...item, dataSourceName: source ? source.name : 'Unknown Source' };
@@ -16,9 +19,13 @@ export async function GET() {
       return item;
     });
 
-    return NextResponse.json(enrichedScrapedData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    if (category && category !== 'all') {
+      articlesToReturn = articlesToReturn.filter(article => article.category.toLowerCase() === category.toLowerCase());
+    }
+
+    return NextResponse.json(articlesToReturn.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()));
   } catch (error) {
-    console.error("Failed to fetch scraped items:", error);
-    return NextResponse.json({ message: "Failed to fetch scraped items" }, { status: 500 });
+    console.error("Failed to fetch news articles:", error);
+    return NextResponse.json({ message: "Failed to fetch news articles" }, { status: 500 });
   }
 }
