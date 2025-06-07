@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  mongodb:
+    image: mongo:latest
     ports:
-      - "3000:3000" # Maps port 3000 on the host to port 3000 in the container
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -20,11 +18,7 @@ services:
     # volumes: # Uncomment for development with hot-reloading (not for production image)
     #  - .:/app
     #  - /app/node_modules # Don't mount node_modules from host
-    #  - /app/.next
-    restart: unless-stopped
-    # healthcheck: # Optional: add a healthcheck
-    #   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"] # Create a /api/health endpoint
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 30s # Give app time to start
+    #  - /app/.next    restart: unless-stopped
+
+volumes:
+  mongodb_data:

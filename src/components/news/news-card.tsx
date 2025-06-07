@@ -1,60 +1,143 @@
-
 "use client";
 
+import { useState, useEffect } from "react";
 import type { NewsArticle } from "@/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { ExternalLink, Tag, CalendarDays, Building } from "lucide-react";
+import { ExternalLink, Tag, CalendarDays, Building, Bookmark, BookmarkCheck } from "lucide-react";
 import { format, parseISO } from 'date-fns';
+import { DEFAULT_NEWS_IMAGE, getPlaceholderImage } from '@/lib/constants';
+import { useToast } from "@/hooks/use-toast";
 
 type NewsCardProps = {
   article: NewsArticle;
+  initialFavorite?: boolean;
 };
 
-export function NewsCard({ article }: NewsCardProps) {
-  const MAX_DESCRIPTION_LENGTH = 150;
-  const displayDescription = article.description 
-    ? (article.description.length > MAX_DESCRIPTION_LENGTH ? article.description.substring(0, MAX_DESCRIPTION_LENGTH) + "..." : article.description)
-    : "No description available.";
+export function NewsCard({ article, initialFavorite = false }: NewsCardProps) {
+  const { toast } = useToast();
+  const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Formatear la fecha con manejo de valores undefined
+  const formattedDate = article.publishedAt 
+    ? format(parseISO(article.publishedAt), "MMM d, yyyy")
+    : "Fecha no disponible";
+
+  useEffect(() => {
+    // Verificar si el artículo está en favoritos cuando se monta el componente
+    const checkFavoriteStatus = async () => {
+      try {
+        const response = await fetch(`/api/news/favorites?articleId=${article.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setIsFavorite(data.isFavorite);
+        }
+      } catch (error) {
+        console.error('Error al verificar estado de favorito:', error);
+      }
+    };
+
+    if (article.id) {
+      checkFavoriteStatus();
+    }
+  }, [article.id]);
+
+  const toggleFavorite = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/news/favorites', {
+        method: isFavorite ? 'DELETE' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          isFavorite 
+            ? { articleId: article.id }
+            : { article: {
+                ...article,
+                publishedAt: article.publishedAt || new Date().toISOString()
+              }}
+        ),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar favoritos');
+      }
+
+      setIsFavorite(!isFavorite);
+      toast({
+        description: isFavorite 
+          ? "Artículo eliminado de favoritos"
+          : "Artículo guardado en favoritos",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar favoritos",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
-      {article.imageUrl && (
-        <div className="relative w-full h-48">
-          <Image
-            src={article.imageUrl}
-            alt={article.title}
-            fill
-            style={{ objectFit: 'cover' }}
-            data-ai-hint={`${article.category} news`}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onError={(e) => (e.currentTarget.src = 'https://placehold.co/600x400.png?text=Image+Error')}
-          />
-        </div>
-      )}
+      <div className="relative w-full h-48">
+        <Image
+          src={article.imageUrl || getPlaceholderImage(article.category || 'general')}
+          alt={article.title || 'News image'}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          style={{ objectFit: 'cover' }}
+          loading="lazy"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            if (img) img.src = getPlaceholderImage(article.category || 'general');
+          }}
+        />
+      </div>
       <CardHeader className="p-4">
-        <CardTitle className="font-headline text-lg leading-tight mb-1">{article.title}</CardTitle>
+        <div className="flex justify-between items-start gap-4">
+          <CardTitle className="font-headline text-lg leading-tight mb-1">{article.title || 'Sin título'}</CardTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={toggleFavorite}
+            disabled={isLoading}
+          >
+            {isFavorite ? (
+              <BookmarkCheck className="h-5 w-5 text-primary" />
+            ) : (
+              <Bookmark className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
         <div className="flex items-center text-xs text-muted-foreground gap-2 mb-2">
           <Building className="h-3 w-3" />
-          <span>{article.sourceName || 'Unknown Source'}</span>
+          <span>{article.sourceName || 'Fuente desconocida'}</span>
           <span className="mx-1">|</span>
           <CalendarDays className="h-3 w-3" />
-          <span>{format(parseISO(article.publishedAt), "MMM d, yyyy")}</span>
+          <span>{formattedDate}</span>
         </div>
-         <Badge variant="secondary" className="capitalize w-fit text-xs py-0.5 px-1.5">
-            <Tag className="h-3 w-3 mr-1" />
-            {article.category}
+        <Badge variant="secondary" className="capitalize w-fit text-xs py-0.5 px-1.5">
+          <Tag className="h-3 w-3 mr-1" />
+          {article.category || 'General'}
         </Badge>
       </CardHeader>
-      <CardContent className="p-4 pt-0 flex-grow">
-        <CardDescription className="text-sm">{displayDescription}</CardDescription>
+      <CardContent className="p-4 pt-0">
+        <p className="text-sm text-muted-foreground">
+          {article.description || 'No hay descripción disponible.'}
+        </p>
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <a href={article.url} target="_blank" rel="noopener noreferrer">
-            Read More <ExternalLink className="ml-2 h-4 w-4" />
+      <CardFooter className="p-4 mt-auto">
+        <Button className="w-full" asChild>
+          <a href={article.url || '#'} target="_blank" rel="noopener noreferrer">
+            Leer más <ExternalLink className="ml-2 h-4 w-4" />
           </a>
         </Button>
       </CardFooter>
