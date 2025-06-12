@@ -170,6 +170,61 @@ chmod +x docker-manager.sh
 - `POST /api/datasources/[id]/scrape` - Ejecutar scraping
 - `POST /api/scraped-items/[id]/enrich` - Enriquecer artículo
 
+## 🚀 Deployment
+
+### Deployment en Vercel
+
+#### Preparación del Código
+
+El proyecto está optimizado para Next.js 15 y listo para deployment:
+
+```bash
+# 1. Verificar que el build funciona localmente
+npm run build
+
+# 2. Asegurar que todas las dependencias están instaladas
+npm install
+```
+
+#### Configurar Variables de Entorno en Vercel
+
+1. **Ir a Vercel Dashboard** → Crear nuevo proyecto
+2. **Conectar repositorio GitHub**
+3. **Configurar variables de entorno**:
+
+```env
+MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/newsapi
+NEXTAUTH_SECRET=tu_secret_super_seguro_aqui
+NEXTAUTH_URL=https://tu-app.vercel.app
+NEWS_API_KEY=tu_api_key_de_newsapi
+```
+
+#### Desplegar
+
+```bash
+# Instalar Vercel CLI (opcional)
+npm i -g vercel
+
+# Deploy desde línea de comandos
+vercel --prod
+
+# O usar GitHub integration automática
+git push origin main
+```
+
+#### Configuración MongoDB Atlas
+
+Para production, usar MongoDB Atlas:
+
+1. **Crear cluster** en [MongoDB Atlas](https://cloud.mongodb.com)
+2. **Configurar Network Access** (permitir 0.0.0.0/0 para Vercel)
+3. **Crear usuario** con permisos de lectura/escritura
+4. **Obtener connection string** y configurar en `MONGODB_URI`
+
+### Docker Deployment (Alternativo)
+
+Ver guía completa en [DOCKER_SETUP.md](./DOCKER_SETUP.md)
+
 ## 🔧 Configuración
 
 ### Variables de Entorno

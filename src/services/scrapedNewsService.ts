@@ -1,8 +1,7 @@
 import type { NewsArticle } from '@/types';
 
-const BASE_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:9002' 
-  : '';
+// Usar rutas relativas a la API interna de Next.js
+const BASE_URL = '';
 
 // Interfaz para los artículos scrapeados de nuestra API
 interface ScrapedArticle {
@@ -79,7 +78,7 @@ export const getScrapedArticles = async (
       params.append('search', search.trim());
     }
 
-    const response = await fetch(`${BASE_URL}/api/scraped-items?${params}`);
+    const response = await fetch(`/api/scraped-items?${params}`);
     
     if (!response.ok) {
       throw new Error(`Error del servidor: ${response.status}`);
@@ -95,11 +94,8 @@ export const getScrapedArticles = async (
     return data.articles.map(convertToNewsArticle);
   } catch (error) {
     console.error('Error al obtener artículos scrapeados:', error);
-    throw new Error(
-      error instanceof Error 
-        ? `Error al cargar artículos: ${error.message}`
-        : 'Error desconocido al cargar artículos'
-    );
+    // Retornar lista vacía en caso de error de red o servidor
+    return [];
   }
 };
 
@@ -123,7 +119,7 @@ export const searchArticles = async (
 // Obtener un artículo específico por ID
 export const getArticleById = async (id: string): Promise<NewsArticle | null> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/scraped-items/${id}`);
+    const response = await fetch(`/api/scraped-items/${id}`);
     
     if (!response.ok) {
       if (response.status === 404) {
@@ -148,7 +144,7 @@ export const getArticleById = async (id: string): Promise<NewsArticle | null> =>
 // Enriquecer un artículo con IA
 export const enrichArticle = async (id: string): Promise<NewsArticle | null> => {
   try {
-    const response = await fetch(`${BASE_URL}/api/scraped-items/${id}/enrich`, {
+    const response = await fetch(`/api/scraped-items/${id}/enrich`, {
       method: 'POST',
     });
     
@@ -176,7 +172,7 @@ export const enrichArticle = async (id: string): Promise<NewsArticle | null> => 
 // Obtener estadísticas de artículos
 export const getArticleStats = async () => {
   try {
-    const response = await fetch(`${BASE_URL}/api/scraped-items?limit=1`);
+    const response = await fetch(`/api/scraped-items?limit=1`);
     
     if (!response.ok) {
       throw new Error(`Error del servidor: ${response.status}`);

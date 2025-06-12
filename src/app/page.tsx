@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,6 +90,9 @@ export default function Home() {
       <footer className="text-center mt-20 pt-8 border-t">
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Portal de Noticias. Mantente informado con scraping real.</p>
       </footer>
+     <div className="text-center mt-4">
+       <Link href="/auth/login" className="text-indigo-600 hover:text-indigo-500 font-medium">Iniciar sesión</Link>
+     </div>
     </div>
   );
 }
