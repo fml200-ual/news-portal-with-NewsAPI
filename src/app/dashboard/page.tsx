@@ -91,7 +91,7 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
         <div className="flex justify-between items-center">
           <div>            <h1 className="text-4xl font-headline font-bold text-primary flex items-center">
               <BarChart3 className="w-10 h-10 mr-3" />
-              Dashboard Híbrido
+              Dashboard General
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
               Resumen del sistema con NewsAPI como fuente principal + scraping local
@@ -115,7 +115,7 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
               {stats.newsApiActive ? 'Activo' : 'Inactivo'}
             </div>
             <p className="text-xs text-muted-foreground">
-              Fuente principal de noticias internacionales
+              Fuente principal de noticias 
             </p>
           </CardContent>
         </Card>
@@ -128,7 +128,7 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalScrapedArticles}</div>
             <p className="text-xs text-muted-foreground">
-              Artículos extraídos de sitios españoles
+              Artículos extraídos de sitios web
             </p>
           </CardContent>
         </Card>

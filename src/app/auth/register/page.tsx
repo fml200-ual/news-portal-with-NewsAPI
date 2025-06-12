@@ -123,11 +123,11 @@ export default function RegisterPage() {
             >
               {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
+            <div className="text-sm text-center mt-4">
+              ¿Ya tienes cuenta? <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">Inicia sesión</Link>
+            </div>
           </div>
         </form>
-      </div>
-      <div className="text-sm text-center mt-4">
-        ¿Ya tienes cuenta? <Link href="/auth/login" className="font-medium text-indigo-600 hover:text-indigo-500">Inicia sesión</Link>
       </div>
     </div>
   );

@@ -12,10 +12,13 @@ export function Navbar() {
         </Link>
         <div className="flex items-center gap-6 text-sm font-medium">
           <Link href="/data" className="text-foreground hover:text-primary transition-colors">
-            All News
+            Noticias
           </Link>
           <Link href="/datasources" className="text-foreground hover:text-primary transition-colors">
-            Source Info
+            Fuentes
+          </Link>
+          <Link href="/dashboard" className="text-foreground hover:text-primary transition-colors">
+            Estadísticas
           </Link>
         </div>
       </div>
