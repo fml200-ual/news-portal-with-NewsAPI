@@ -1,70 +1,145 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { dataSourcesStore, newsArticleStore, getNextNewsArticleId } from '@/lib/db';
+import { connectToDatabase } from '@/lib/mongodb';
+import { DataSource } from '@/lib/models/DataSource';
+import { ScrapedItem } from '@/lib/models/ScrapedItem';
+import { WebScraper, scrapingConfigs, createGenericConfig } from '@/services/scrapingService';
 import type { NewsArticle } from '@/types';
 
-// This endpoint simulates fetching news from a source (e.g., News API)
-// In a real app, this would make an actual API call.
-export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const dataSource = dataSourcesStore.find(ds => ds.id === params.id);
+    // Await params before using its properties
+    const { id } = await params;
+    
+    await connectToDatabase();
+    
+    const dataSource = await DataSource.findById(id);
     if (!dataSource) {
-      return NextResponse.json({ message: "Data source not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Fuente de datos no encontrada' },
+        { status: 404 }
+      );
     }
 
-    dataSource.status = 'scraping'; // 'fetching'
-    // Simulate network delay and processing
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
+    // Actualizar estado a "scraping"
+    dataSource.status = 'scraping';
+    dataSource.errorMessage = undefined;
+    await dataSource.save();
 
-    const newFetchedArticles: NewsArticle[] = [];
-    const categories = ['technology', 'business', 'sports']; // Example categories for mock fetch
-    
-    // Simulate fetching a few new articles for this source
-    for (let i = 0; i < Math.floor(Math.random() * 2) + 1; i++) { 
-      const category = categories[Math.floor(Math.random() * categories.length)];
-      const articleDate = new Date();
-      const newItemId = getNextNewsArticleId();
+    let articles: NewsArticle[] = [];
+    let scrapingMethod = 'generic';
 
-      const newArticle: NewsArticle = {
-        id: newItemId,
-        dataSourceId: dataSource.id,
-        dataSourceName: dataSource.name,
-        title: `Newly Fetched: Latest in ${category.charAt(0).toUpperCase() + category.slice(1)} #${newsArticleStore.length + i + 1}`,
-        description: `Fresh content just fetched for ${category} from ${dataSource.name}.`,
-        url: `https://example.com/news/${category}/new${newItemId}`,
-        imageUrl: `https://placehold.co/600x400.png?text=New+${category}`,
-        publishedAt: articleDate.toISOString(),
-        content: `This is newly fetched content for ${category}.`,
-        category: category,
-        sourceName: dataSource.name.includes("API") ? "Various Sources via API" : dataSource.name,
-        isEnriched: false,
-        createdAt: articleDate.toISOString(),
-        lastUpdatedAt: articleDate.toISOString(),
-      };
-      newFetchedArticles.push(newArticle);
-      newsArticleStore.unshift(newArticle); // Add to the beginning
+    try {
+      // Determinar el método de scraping
+      const hostname = new URL(dataSource.url).hostname;
+      const config = scrapingConfigs[hostname];
+
+      if (config) {
+        // Usar scraper con configuración predefinida
+        scrapingMethod = 'predefined';
+        const scraper = new WebScraper(config);
+        articles = await scraper.scrapeArticles();
+      } else {
+        // Usar scraper genérico con configuración personalizada o genérica
+        scrapingMethod = 'generic';
+        const genericConfig = dataSource.config?.selectors 
+          ? {
+              url: dataSource.url,
+              selectors: dataSource.config.selectors,
+              baseUrl: new URL(dataSource.url).origin
+            }
+          : createGenericConfig(dataSource.url);
+        
+        const scraper = new WebScraper(genericConfig);
+        articles = await scraper.scrapeArticles();
+      }
+
+      // Filtrar artículos duplicados por URL
+      const existingUrls = new Set();
+      const existingItems = await ScrapedItem.find({ dataSourceId: dataSource._id }).select('url');
+      existingItems.forEach(item => existingUrls.add(item.url));
+
+      const newArticles = articles.filter(article => !existingUrls.has(article.url));
+
+      // Guardar artículos en la base de datos
+      const savedItems = [];
+      for (const article of newArticles.slice(0, 20)) { // Limitar a 20 artículos
+        try {
+          const scrapedItem = new ScrapedItem({
+            title: article.title,
+            description: article.description,
+            content: article.content,
+            url: article.url,
+            imageUrl: article.imageUrl,
+            publishedAt: article.publishedAt,
+            category: article.category,
+            sourceName: article.sourceName,
+            dataSourceId: dataSource._id,
+            dataSourceName: dataSource.name,
+            isEnriched: false,
+            originalUrl: article.url,
+            scrapedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            lastUpdatedAt: new Date().toISOString()
+          });
+          
+          await scrapedItem.save();
+          savedItems.push(scrapedItem);
+        } catch (error: any) {
+          console.warn('Error guardando artículo:', error.message);
+        }
+      }
+
+      // Actualizar la fuente de datos
+      dataSource.status = 'success';
+      dataSource.lastScrapedAt = new Date().toISOString();
+      dataSource.totalItems = (dataSource.totalItems || 0) + savedItems.length;
+      await dataSource.save();
+
+      return NextResponse.json({
+        success: true,
+        message: `Scraping completado con método ${scrapingMethod}. ${savedItems.length} artículos nuevos extraídos de ${articles.length} encontrados.`,
+        itemsScraped: savedItems.length,
+        totalFound: articles.length,
+        method: scrapingMethod,
+        articles: savedItems.map(item => ({
+          id: item._id,
+          title: item.title,
+          description: item.description,
+          url: item.url,
+          imageUrl: item.imageUrl,
+          publishedAt: item.publishedAt,
+          category: item.category,
+          sourceName: item.sourceName
+        }))
+      });
+
+    } catch (scrapingError: any) {
+      console.error('Error durante el scraping:', scrapingError);
+      
+      // Actualizar estado de error
+      dataSource.status = 'error';
+      dataSource.errorMessage = scrapingError.message || 'Error desconocido durante el scraping';
+      await dataSource.save();
+
+      return NextResponse.json(
+        { 
+          error: 'Error durante el scraping',
+          details: scrapingError.message,
+          method: scrapingMethod
+        },
+        { status: 500 }
+      );
     }
 
-    dataSource.status = 'success';
-    dataSource.lastScrapedAt = new Date().toISOString();
-
-    const dsIndex = dataSourcesStore.findIndex(ds => ds.id === params.id);
-    if (dsIndex !== -1) {
-      dataSourcesStore[dsIndex] = { ...dataSource };
-    }
-    
-    return NextResponse.json({ 
-      message: `Successfully fetched ${newFetchedArticles.length} new articles from ${dataSource.name}`, 
-      newItems: newFetchedArticles, 
-      updatedDataSource: dataSource 
-    }, { status: 200 });
-
-  } catch (error) {
-    console.error(`Failed to fetch from data source ${params.id}:`, error);
-    const dsIndex = dataSourcesStore.findIndex(ds => ds.id === params.id);
-    if (dsIndex !== -1) {
-      dataSourcesStore[dsIndex].status = 'error';
-    }
-    return NextResponse.json({ message: "Failed to fetch from data source" }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error general en scraping:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
   }
 }

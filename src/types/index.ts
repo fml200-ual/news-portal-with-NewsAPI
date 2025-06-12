@@ -23,10 +23,13 @@ export interface NewsArticle {
   
   category: string; // e.g., 'business', 'technology', 'sports'
   sourceName: string; // Name of the news source, e.g., "CNN", "TechCrunch"
-
   isEnriched: boolean; // If AI processing has been done
-  sentiment?: 'positive' | 'negative' | 'neutral';
+  sentiment?: {
+    score: number;
+    label: 'positive' | 'negative' | 'neutral';
+  };
   summary?: string; // AI-generated summary
+  source?: 'newsapi' | 'scraping'; // Indica de dónde viene el artículo
   
   createdAt: string; // When this record was created in our system
   lastUpdatedAt: string; // When this record was last updated

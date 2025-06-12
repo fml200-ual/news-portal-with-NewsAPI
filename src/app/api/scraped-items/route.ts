@@ -1,31 +1,70 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { newsArticleStore, dataSourcesStore } from '@/lib/db'; // Updated store name
-import type { NewsArticle } from '@/types'; // Updated type
+import { connectToDatabase } from '@/lib/mongodb';
+import { ScrapedItem } from '@/lib/models/ScrapedItem';
+import { DataSource } from '@/lib/models/DataSource';
 
 export async function GET(request: NextRequest) {
   try {
-    // Add a slight delay to simulate network latency
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await connectToDatabase();
     
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
 
-    let articlesToReturn = newsArticleStore.map(item => {
-      if (!item.dataSourceName) {
-        const source = dataSourcesStore.find(ds => ds.id === item.dataSourceId);
-        return { ...item, dataSourceName: source ? source.name : 'Unknown Source' };
-      }
-      return item;
-    });
-
+    // Construir filtro
+    const filter: any = {};
     if (category && category !== 'all') {
-      articlesToReturn = articlesToReturn.filter(article => article.category.toLowerCase() === category.toLowerCase());
+      filter.category = category.toLowerCase();
     }
 
-    return NextResponse.json(articlesToReturn.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()));
-  } catch (error) {
-    console.error("Failed to fetch news articles:", error);
-    return NextResponse.json({ message: "Failed to fetch news articles" }, { status: 500 });
+    // Obtener artículos con paginación
+    const scrapedItems = await ScrapedItem.find(filter)
+      .sort({ publishedAt: -1, scrapedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('dataSourceId', 'name')
+      .lean();
+
+    // Contar total para paginación
+    const total = await ScrapedItem.countDocuments(filter);    // Transformar datos para mantener compatibilidad con el frontend
+    const articles = scrapedItems.map((item: any) => ({
+      id: item._id.toString(),
+      dataSourceId: item.dataSourceId,
+      dataSourceName: item.dataSourceName,
+      title: item.title,
+      description: item.description,
+      url: item.url,
+      imageUrl: item.imageUrl,
+      publishedAt: item.publishedAt,
+      content: item.content,
+      category: item.category,
+      sourceName: item.sourceName,
+      isEnriched: item.isEnriched,
+      sentiment: item.sentiment,
+      summary: item.summary,
+      createdAt: item.createdAt,
+      lastUpdatedAt: item.lastUpdatedAt
+    }));
+
+    return NextResponse.json({
+      articles,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total
+      }
+    });
+
+  } catch (error: any) {
+    console.error("Error al obtener artículos scrapeados:", error);
+    return NextResponse.json({ 
+      message: "Error al obtener artículos scrapeados",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }

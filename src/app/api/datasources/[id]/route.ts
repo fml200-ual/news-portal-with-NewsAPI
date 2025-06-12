@@ -1,66 +1,133 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { dataSourcesStore } from '@/lib/db';
-import type { DataSource } from '@/types';
+import { connectToDatabase } from '@/lib/mongodb';
+import { DataSource } from '@/lib/models/DataSource';
+import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { z } from 'zod';
 
 const dataSourceUpdateSchema = z.object({
-  name: z.string().min(1, "Name is required").optional(),
-  type: z.enum(['url', 'api']).optional(),
-  value: z.string().min(1, "Value is required").url("Value must be a valid URL or API endpoint").optional(),
-  status: z.enum(['idle', 'scraping', 'error', 'success']).optional(),
+  name: z.string().min(1, "El nombre es requerido").optional(),
+  requiresJavaScript: z.boolean().optional(),
+  scrapingConfig: z.object({
+    selectors: z.object({
+      title: z.string().optional(),
+      description: z.string().optional(),
+      content: z.string().optional(),
+      image: z.string().optional(),
+      publishedAt: z.string().optional(),
+      link: z.string().optional(),
+      container: z.string().optional()
+    }).optional()
+  }).optional()
 });
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const dataSource = dataSourcesStore.find(ds => ds.id === params.id);
+    // Await params before using its properties
+    const { id } = await params;
+    
+    await connectToDatabase();
+    
+    const dataSource = await DataSource.findById(id);
     if (!dataSource) {
-      return NextResponse.json({ message: "Data source not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Fuente de datos no encontrada' },
+        { status: 404 }
+      );
     }
-    return NextResponse.json(dataSource);
-  } catch (error) {
-    console.error(`Failed to fetch data source ${params.id}:`, error);
-    return NextResponse.json({ message: "Failed to fetch data source" }, { status: 500 });
+
+    return NextResponse.json(dataSource);  } catch (error: any) {
+    console.error('Error al obtener fuente de datos:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error al obtener fuente de datos',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Await params before using its properties
+    const { id } = await params;
+    
+    await connectToDatabase();
+    
+    const dataSource = await DataSource.findById(id);
+    if (!dataSource) {
+      return NextResponse.json(
+        { error: 'Fuente de datos no encontrada' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const validation = dataSourceUpdateSchema.safeParse(body);
 
     if (!validation.success) {
-      return NextResponse.json({ message: "Invalid input", errors: validation.error.format() }, { status: 400 });
+      return NextResponse.json({ 
+        message: "Datos de entrada inválidos", 
+        errors: validation.error.format() 
+      }, { status: 400 });
     }
-
-    const dataSourceIndex = dataSourcesStore.findIndex(ds => ds.id === params.id);
-    if (dataSourceIndex === -1) {
-      return NextResponse.json({ message: "Data source not found" }, { status: 404 });
-    }
-
-    const updatedDataSource = { ...dataSourcesStore[dataSourceIndex], ...validation.data, lastScrapedAt: validation.data.status ? new Date().toISOString() : dataSourcesStore[dataSourceIndex].lastScrapedAt };
-    dataSourcesStore[dataSourceIndex] = updatedDataSource;
     
-    return NextResponse.json(updatedDataSource);
-  } catch (error) {
-    console.error(`Failed to update data source ${params.id}:`, error);
-     if (error instanceof SyntaxError) {
-        return NextResponse.json({ message: "Invalid JSON payload" }, { status: 400 });
+    // Actualizar campos permitidos
+    const validatedData = validation.data;
+    if (validatedData.name) dataSource.name = validatedData.name;
+    if (validatedData.requiresJavaScript !== undefined) dataSource.requiresJavaScript = validatedData.requiresJavaScript;
+    if (validatedData.scrapingConfig) dataSource.scrapingConfig = validatedData.scrapingConfig;
+
+    await dataSource.save();
+
+    return NextResponse.json({
+      message: 'Fuente de datos actualizada exitosamente',
+      dataSource
+    });
+
+  } catch (error: any) {
+    console.error('Error al actualizar fuente de datos:', error);
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ message: "JSON inválido" }, { status: 400 });
     }
-    return NextResponse.json({ message: "Failed to update data source" }, { status: 500 });
+    return NextResponse.json({ 
+      message: "Error al actualizar fuente de datos",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const dataSourceIndex = dataSourcesStore.findIndex(ds => ds.id === params.id);
-    if (dataSourceIndex === -1) {
-      return NextResponse.json({ message: "Data source not found" }, { status: 404 });
-    }
+    // Await params before using its properties
+    const { id } = await params;
+    
+    await connectToDatabase();
+    
+    const dataSource = await DataSource.findById(id);
+    if (!dataSource) {
+      return NextResponse.json(
+        { error: 'Fuente de datos no encontrada' },
+        { status: 404 }
+      );
+    }    // Eliminar todos los artículos scrapeados de esta fuente
+    await ScrapedItem.deleteMany({ dataSourceId: id });
 
-    dataSourcesStore.splice(dataSourceIndex, 1);
-    return NextResponse.json({ message: "Data source deleted" }, { status: 200 });
-  } catch (error) {
-    console.error(`Failed to delete data source ${params.id}:`, error);
-    return NextResponse.json({ message: "Failed to delete data source" }, { status: 500 });
+    // Eliminar la fuente de datos
+    await DataSource.findByIdAndDelete(id);
+
+    return NextResponse.json({
+      message: 'Fuente de datos y artículos asociados eliminados exitosamente'
+    });
+
+  } catch (error: any) {
+    console.error('Error al eliminar fuente de datos:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error al eliminar fuente de datos',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
+      { status: 500 }
+    );
   }
 }

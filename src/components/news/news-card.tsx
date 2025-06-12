@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { ExternalLink, Tag, CalendarDays, Building, Bookmark, BookmarkCheck } from "lucide-react";
+import { ExternalLink, Tag, CalendarDays, Building, Bookmark, BookmarkCheck, Sparkles, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import { DEFAULT_NEWS_IMAGE, getPlaceholderImage } from '@/lib/constants';
 import { useToast } from "@/hooks/use-toast";
@@ -123,16 +123,57 @@ export function NewsCard({ article, initialFavorite = false }: NewsCardProps) {
           <span className="mx-1">|</span>
           <CalendarDays className="h-3 w-3" />
           <span>{formattedDate}</span>
-        </div>
-        <Badge variant="secondary" className="capitalize w-fit text-xs py-0.5 px-1.5">
+        </div>        <Badge variant="secondary" className="capitalize w-fit text-xs py-0.5 px-1.5">
           <Tag className="h-3 w-3 mr-1" />
           {article.category || 'General'}
         </Badge>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
+          {/* Mostrar información de enriquecimiento y fuente */}
+        <div className="flex gap-2 mt-2 flex-wrap">
+          {/* Badge de fuente */}
+          <Badge 
+            variant={article.source === 'newsapi' ? 'default' : 'secondary'} 
+            className="text-xs py-0.5 px-1.5"
+          >
+            {article.source === 'newsapi' ? 'NewsAPI' : 'Scraping Local'}
+          </Badge>
+          
+          {article.isEnriched && (
+            <Badge variant="outline" className="text-xs py-0.5 px-1.5">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Enriquecido
+            </Badge>
+          )}
+          
+          {article.sentiment && (
+            <Badge 
+              variant={
+                article.sentiment.label === 'positive' ? 'default' :
+                article.sentiment.label === 'negative' ? 'destructive' : 'secondary'
+              }
+              className="text-xs py-0.5 px-1.5"
+            >
+              {article.sentiment.label === 'positive' && <TrendingUp className="h-3 w-3 mr-1" />}
+              {article.sentiment.label === 'negative' && <TrendingDown className="h-3 w-3 mr-1" />}
+              {article.sentiment.label === 'neutral' && <Minus className="h-3 w-3 mr-1" />}
+              {article.sentiment.label === 'positive' ? 'Positivo' :
+               article.sentiment.label === 'negative' ? 'Negativo' : 'Neutral'}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>      <CardContent className="p-4 pt-0">
         <p className="text-sm text-muted-foreground">
-          {article.description || 'No hay descripción disponible.'}
+          {article.summary || article.description || 'No hay descripción disponible.'}
         </p>
+        {article.summary && article.description && article.summary !== article.description && (
+          <details className="mt-2">
+            <summary className="text-xs text-primary cursor-pointer hover:underline">
+              Ver descripción original
+            </summary>
+            <p className="text-xs text-muted-foreground mt-1">
+              {article.description}
+            </p>
+          </details>
+        )}
       </CardContent>
       <CardFooter className="p-4 mt-auto">
         <Button className="w-full" asChild>

@@ -5,7 +5,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { NewsCard } from './news-card';
-import { searchNews } from '@/services/newsService';
+import { searchArticles } from '@/services/hybridNewsService';
 import type { NewsArticle } from '@/types';
 
 export function SearchNews() {
@@ -19,13 +19,8 @@ export function SearchNews() {
     if (!searchTerm.trim()) return;
 
     setIsLoading(true);
-    setError(null);
-
-    try {
-      const results = await searchNews(searchTerm, {
-        sortBy: 'publishedAt',
-        language: 'es',
-      });
+    setError(null);    try {
+      const results = await searchArticles(searchTerm);
       setArticles(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al buscar noticias');

@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Newspaper, UserCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getNewsByCategory } from '@/services/newsService';
+import { getNewsByCategory } from '@/services/hybridNewsService';
 import { SearchNews } from '@/components/news/search-news';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';

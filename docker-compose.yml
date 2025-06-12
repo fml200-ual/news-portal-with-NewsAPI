@@ -1,24 +1,62 @@
 services:
+  # Base de datos MongoDB
   mongodb:
-    image: mongo:latest
+    image: mongo:7.0
+    container_name: studio-mongodb
+    restart: unless-stopped
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: newsapi
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - studio-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Aplicación Next.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: studio-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      # For server-side fetch requests within the app (e.g. from Server Component to API route)
-      # This should be the URL accessible from within the Docker network if services call each other.
-      # For calls from client-side, it will be the browser's current host.
-      # If running standalone, localhost:3000 is fine for internal SSR fetches from server to itself.
-      NEXT_PUBLIC_APP_URL: http://localhost:3000 
-      # Add any other environment variables your app needs:
-      # EXTERNAL_API_KEY: your_api_key
-    # volumes: # Uncomment for development with hot-reloading (not for production image)
-    #  - .:/app
-    #  - /app/node_modules # Don't mount node_modules from host
-    #  - /app/.next    restart: unless-stopped
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      # MongoDB connection (using Docker network)
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/newsapi?authSource=admin
+      # App URL for internal server-side fetches
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      # NewsAPI key (set this in your .env.local or pass as build arg)
+      - NEXT_PUBLIC_NEWSAPI_KEY=${NEXT_PUBLIC_NEWSAPI_KEY:-your_newsapi_key_here}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - studio-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   mongodb_data:
+    driver: local
+
+networks:
+  studio-network:
+    driver: bridge
