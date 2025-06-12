@@ -10,14 +10,14 @@
     }
   },
   "env": {
-    "MONGODB_URI": "@mongodb-uri",
+    "MONGODB_URI": "mongodb+srv://motalopezfrancisco:AO9GZn8G4vqwTujM@cluster0.xepdfhl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
     "NEXTAUTH_SECRET": "@nextauth-secret",
     "NEXTAUTH_URL": "@nextauth-url",
     "NEWS_API_KEY": "@news-api-key"
   },
   "build": {
     "env": {
-      "MONGODB_URI": "@mongodb-uri",
+      "MONGODB_URI": "mongodb+srv://motalopezfrancisco:AO9GZn8G4vqwTujM@cluster0.xepdfhl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
       "NEXTAUTH_SECRET": "@nextauth-secret",
       "NEXTAUTH_URL": "@nextauth-url",
       "NEWS_API_KEY": "@news-api-key"
