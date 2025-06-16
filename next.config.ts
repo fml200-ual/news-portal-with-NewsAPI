@@ -2,6 +2,7 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone', // Add this for Docker optimization
+  reactStrictMode: false, // Temporarily disable to avoid third-party warnings
   typescript: {
     ignoreBuildErrors: true,
   },

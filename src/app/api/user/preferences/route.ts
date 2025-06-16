@@ -4,6 +4,33 @@ import { User } from '@/lib/models/User';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/options';
 
+/**
+ * @swagger
+ * /api/user/preferences:
+ *   get:
+ *     summary: Obtener preferencias del usuario
+ *     description: Obtiene las preferencias de configuración del usuario autenticado
+ *     tags: [User]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Preferencias obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ *                 preferences:
+ *                   $ref: '#/components/schemas/UserPreferences'
+ *       401:
+ *         description: No autorizado
+ *       500:
+ *         description: Error del servidor
+ */
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -38,6 +65,46 @@ export async function GET(request: Request) {
   }
 }
 
+/**
+ * @swagger
+ * /api/user/preferences:
+ *   put:
+ *     summary: Actualizar preferencias del usuario
+ *     description: Actualiza las preferencias de configuración del usuario autenticado
+ *     tags: [User]
+ *     security:
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               preferences:
+ *                 $ref: '#/components/schemas/UserPreferences'
+ *     responses:
+ *       200:
+ *         description: Preferencias actualizadas correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ *                 preferences:
+ *                   $ref: '#/components/schemas/UserPreferences'
+ *       400:
+ *         description: Solicitud incorrecta
+ *       401:
+ *         description: No autorizado
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error del servidor
+ */
 export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions);

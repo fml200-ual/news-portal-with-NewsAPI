@@ -20,6 +20,44 @@ const dataSourceUpdateSchema = z.object({
   }).optional()
 });
 
+/**
+ * @swagger
+ * /api/datasources/{id}:
+ *   get:
+ *     summary: Obtener fuente de datos por ID
+ *     tags: [DataSources]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la fuente de datos
+ *     responses:
+ *       200:
+ *         description: Fuente de datos encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DataSource'
+ *       404:
+ *         description: Fuente de datos no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Fuente de datos no encontrada"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Await params before using its properties
@@ -46,6 +84,97 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     );
   }
 }
+
+/**
+ * @swagger
+ * /api/datasources/{id}:
+ *   put:
+ *     summary: Actualizar fuente de datos
+ *     tags: [DataSources]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la fuente de datos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre de la fuente
+ *               requiresJavaScript:
+ *                 type: boolean
+ *                 description: Si requiere JavaScript para el scraping
+ *               scrapingConfig:
+ *                 type: object
+ *                 properties:
+ *                   selectors:
+ *                     type: object
+ *                     properties:
+ *                       title:
+ *                         type: string
+ *                         example: "h1, h2"
+ *                       description:
+ *                         type: string
+ *                         example: ".summary, .description"
+ *                       content:
+ *                         type: string
+ *                         example: ".content, .body"
+ *                       image:
+ *                         type: string
+ *                         example: "img"
+ *                       publishedAt:
+ *                         type: string
+ *                         example: ".date, time"
+ *                       link:
+ *                         type: string
+ *                         example: "a[href]"
+ *                       container:
+ *                         type: string
+ *                         example: ".article, .news-item"
+ *     responses:
+ *       200:
+ *         description: Fuente de datos actualizada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DataSource'
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 details:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       404:
+ *         description: Fuente de datos no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Fuente de datos no encontrada"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -96,6 +225,48 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }, { status: 500 });
   }
 }
+
+/**
+ * @swagger
+ * /api/datasources/{id}:
+ *   delete:
+ *     summary: Eliminar fuente de datos
+ *     tags: [DataSources]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la fuente de datos
+ *     responses:
+ *       200:
+ *         description: Fuente de datos eliminada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Fuente de datos y artículos asociados eliminados exitosamente"
+ *       404:
+ *         description: Fuente de datos no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Fuente de datos no encontrada"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

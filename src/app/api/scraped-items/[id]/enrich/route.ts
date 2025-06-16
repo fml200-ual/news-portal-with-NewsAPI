@@ -1,4 +1,3 @@
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
@@ -107,3 +106,79 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }, { status: 500 });
   }
 }
+
+/**
+ * @swagger
+ * /api/scraped-items/{id}/enrich:
+ *   post:
+ *     summary: Enriquecer artículo con análisis de sentimiento y resumen
+ *     tags: [ScrapedItems, AI]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del artículo scrapeado
+ *     responses:
+ *       200:
+ *         description: Artículo enriquecido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Artículo enriquecido exitosamente"
+ *                 item:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/ScrapedItem'
+ *                     - type: object
+ *                       properties:
+ *                         isEnriched:
+ *                           type: boolean
+ *                           example: true
+ *                         sentiment:
+ *                           type: string
+ *                           enum: [positive, negative, neutral]
+ *                           example: "positive"
+ *                         summary:
+ *                           type: string
+ *                           example: "Resumen generado automáticamente del contenido del artículo..."
+ *       404:
+ *         description: Artículo no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Artículo no encontrado"
+ *       409:
+ *         description: Artículo ya enriquecido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Este artículo ya ha sido enriquecido"
+ *       500:
+ *         description: Error durante el enriquecimiento
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Error al enriquecer artículo"
+ *                 details:
+ *                   type: string
+ */

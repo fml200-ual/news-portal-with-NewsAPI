@@ -1,88 +1,49 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { NewsArticle } from '@/types';
-import { NewsCard } from '@/components/news/news-card';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Newspaper, UserCircle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getNewsByCategory } from '@/services/hybridNewsService';
+import { UserCircle, Newspaper } from 'lucide-react';
 import { SearchNews } from '@/components/news/search-news';
+import { RegionSelector } from '@/components/news/RegionSelector';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
+import NewsList from '@/components/news/NewsList';
 
-const CATEGORIES = ['all', 'technology', 'business', 'sports', 'science', 'health', 'entertainment'];
+const CATEGORIES = [
+  { value: 'all', label: 'Todas' },
+  { value: 'scraping', label: 'Scraping' },
+  { value: 'technology', label: 'Tecnología' },
+  { value: 'business', label: 'Negocios' },
+  { value: 'sports', label: 'Deportes' },
+  { value: 'science', label: 'Ciencia' },
+  { value: 'health', label: 'Salud' },
+  { value: 'entertainment', label: 'Entretenimiento' }
+];
 
 export default function NewsPage() {
   const router = useRouter();
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  const fetchNews = useCallback(async (category: string, currentPage: number, appendResults: boolean = false) => {
-    if (!appendResults) {
-      setIsLoading(true);
-    }
-    setError(null);
-    try {
-      const newArticles = await getNewsByCategory(category, currentPage);
-      if (newArticles.length === 0) {
-        setHasMore(false);
-      }
-      setArticles(prev => appendResults ? [...prev, ...newArticles] : newArticles);
-    } catch (e) {
-      console.error(`Failed to fetch news for ${category}:`, e);
-      setError(e instanceof Error ? e.message : 'Error al cargar las noticias');
-      if (!appendResults) {
-        setArticles([]);
-      }
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchNews(selectedCategory, 1, false);
-  }, [selectedCategory, fetchNews]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoading && !isLoadingMore && hasMore) {
-          setIsLoadingMore(true);
-          setPage(prev => {
-            const nextPage = prev + 1;
-            fetchNews(selectedCategory, nextPage, true);
-            return nextPage;
-          });
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [selectedCategory, isLoading, isLoadingMore, hasMore, fetchNews]);
+  const [selectedRegion, setSelectedRegion] = useState<'spanish' | 'international' | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const handleTabChange = (value: string) => {
     setSelectedCategory(value);
+    setSearchQuery(''); // Limpiar búsqueda al cambiar categoría
+  };
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setSelectedCategory('all'); // Resetear categoría al buscar
+  };
+
+  const handleRegionChange = (region: 'spanish' | 'international' | 'all') => {
+    setSelectedRegion(region);
+    setSearchQuery(''); // Limpiar búsqueda al cambiar región
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      {/* Header */}
       <header className="mb-8">
         <div className="flex justify-end mb-4">
           <Button
@@ -95,90 +56,55 @@ export default function NewsPage() {
             Mi Perfil
           </Button>
         </div>
+        
         <div className="text-center">
           <h1 className="text-4xl lg:text-5xl font-headline font-bold text-primary mb-2 flex items-center justify-center">
             <Newspaper className="w-10 h-10 mr-3 text-primary" />
             Últimas Noticias
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Explora noticias por categorías o realiza una búsqueda
+          </h1>          <p className="text-lg text-muted-foreground mb-2">
+            Explora noticias por categorías y busca temas específicos
           </p>
         </div>
-      </header>
-
-      <div className="mb-8">
-        <SearchNews />
+      </header>      {/* Búsqueda y filtros */}
+      <div className="mb-8 space-y-4">
+        {/* Barra de búsqueda */}
+        <SearchNews onSearch={handleSearch} />
+        
+        {/* Selector de región */}
+        <div className="flex justify-center">
+          <RegionSelector 
+            selectedRegion={selectedRegion}
+            onRegionChange={handleRegionChange}
+          />
+        </div>
       </div>
 
       <Separator className="my-8" />
 
-      <Tabs value={selectedCategory} onValueChange={handleTabChange} className="mb-8">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-7">
-          {CATEGORIES.map((cat) => (
-            <TabsTrigger key={cat} value={cat} className="capitalize">
-              {cat}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      {isLoading && articles.length === 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm flex flex-col">
-              <Skeleton className="h-48 w-full rounded-t-lg" />
-              <div className="p-4 space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-1/4" />
-              </div>
-              <div className="p-4 mt-auto">
-                <Skeleton className="h-10 w-full" />
-              </div>
-            </div>
-          ))}
+      {/* Filtros por categoría */}
+      {!searchQuery && (
+        <div className="mb-8">
+          <Tabs value={selectedCategory} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-8 h-auto">
+              {CATEGORIES.map((cat) => (
+                <TabsTrigger 
+                  key={cat.value} 
+                  value={cat.value} 
+                  className="text-xs sm:text-sm px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  {cat.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
-      )}
-
-      {!isLoading && error && (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error al Cargar Noticias</AlertTitle>
-          <AlertDescription>
-            {error}. Por favor, intenta recargar la página o selecciona otra categoría.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!isLoading && !error && articles.length === 0 && (
-        <div className="text-center py-12">
-          <Newspaper className="mx-auto h-24 w-24 text-muted-foreground opacity-50 mb-4" />
-          <p className="text-xl text-muted-foreground">No se encontraron artículos en la categoría &quot;{selectedCategory}&quot;.</p>
-          <p className="text-sm text-muted-foreground mt-2">Intenta seleccionar otra categoría o vuelve más tarde.</p>
-        </div>
-      )}
-
-      {articles.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {articles.map((article) => (
-              <NewsCard key={article.id} article={article} />
-            ))}
-          </div>
-          
-          <div ref={loadMoreRef} className="flex justify-center mt-8">
-            {isLoadingMore && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Cargando más noticias...</span>
-              </div>
-            )}
-            {!isLoadingMore && !hasMore && articles.length > 0 && (
-              <p className="text-muted-foreground">No hay más noticias disponibles</p>
-            )}
-          </div>
-        </>
-      )}
+      )}      {/* Lista de noticias con scroll infinito y ordenamiento */}
+      <NewsList 
+        category={selectedCategory === 'all' ? '' : selectedCategory}
+        query={searchQuery}
+        region={selectedRegion}
+        initialPageSize={20}
+      />
     </div>
   );
 }

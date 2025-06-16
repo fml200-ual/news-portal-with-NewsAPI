@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getStats } from '@/services/hybridNewsService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,49 +11,67 @@ import {
   Clock,
   TrendingUp,
   RefreshCw
-} from 'lucide-react';
+} from '@/components/ui/safe-icons';
 import Link from 'next/link';
 
 interface DashboardStats {
   totalScrapedArticles: number;
+  totalNewsApiArticles: number;
   totalSources: number;
   newsApiActive: boolean;
   recentArticles: number;
   enrichedArticles: number;
 }
 
-export default function DashboardPage() {  const [stats, setStats] = useState<DashboardStats>({
+export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({
     totalScrapedArticles: 0,
+    totalNewsApiArticles: 0,
     totalSources: 0,
     newsApiActive: false,
     recentArticles: 0,
     enrichedArticles: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+
   const fetchStats = async () => {
     try {
       setIsLoading(true);
       
-      // Usar el servicio híbrido para obtener estadísticas
-      const hybridStats = await getStats();
+      // Obtener estadísticas de artículos scrapeados
+      const scrapedResponse = await fetch('/api/scraped-items?limit=1000');
+      const scrapedData = await scrapedResponse.json();
+      const scrapedArticles = scrapedData.articles || [];
       
-      // Obtener artículos recientes y enriquecidos del scraping
-      const enrichedResponse = await fetch('/api/scraped-items?limit=100');
-      const enrichedData = await enrichedResponse.json();
-      const enrichedCount = enrichedData.articles?.filter((article: any) => article.isEnriched).length || 0;
+      // Obtener estadísticas de NewsAPI (artículos sin scraping)
+      const newsResponse = await fetch('/api/news?region=all&category=all');
+      const newsData = await newsResponse.json();
+      const newsApiArticles = newsData.articles || [];
       
-      // Obtener artículos recientes (últimas 24 horas)
+      // Obtener fuentes de datos
+      const sourcesResponse = await fetch('/api/datasources');
+      const sourcesData = await sourcesResponse.json();
+      const dataSources = sourcesData.dataSources || [];
+      
+      // Calcular estadísticas
+      const enrichedCount = scrapedArticles.filter((article: any) => article.isEnriched).length;
+      
+      // Artículos recientes (últimas 24 horas)
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const recentArticles = enrichedData.articles?.filter((article: any) => 
-        new Date(article.createdAt) > yesterday
-      ).length || 0;
+      const recentScraped = scrapedArticles.filter((article: any) => 
+        new Date(article.createdAt || article.scrapedAt) > yesterday
+      ).length;
+      const recentNews = newsApiArticles.filter((article: any) => 
+        new Date(article.publishedAt || article.createdAt) > yesterday
+      ).length;
 
       setStats({
-        totalScrapedArticles: hybridStats.totalScrapedArticles,
-        totalSources: hybridStats.totalSources,
-        newsApiActive: hybridStats.newsApiActive,
-        recentArticles,
+        totalScrapedArticles: scrapedArticles.length,
+        totalNewsApiArticles: newsApiArticles.length,
+        totalSources: dataSources.length,
+        newsApiActive: newsApiArticles.length > 0,
+        recentArticles: recentScraped + recentNews,
         enrichedArticles: enrichedCount
       });
     } catch (error) {
@@ -88,13 +105,13 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
   return (
     <div className="container mx-auto py-8 px-4">
       <header className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>            <h1 className="text-4xl font-headline font-bold text-primary flex items-center">
+        <div className="flex justify-between items-center">          <div>
+            <h1 className="text-4xl font-headline font-bold text-primary flex items-center">
               <BarChart3 className="w-10 h-10 mr-3" />
-              Dashboard General
+              Dashboard de Noticias
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
-              Resumen del sistema con NewsAPI como fuente principal + scraping local
+              Sistema híbrido: NewsAPI para fuentes españolas/internacionales + Scraping local
             </p>
           </div>
           
@@ -104,44 +121,55 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
           </Button>
         </div>
       </header>      {/* Estadísticas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">NewsAPI Estado</CardTitle>
+            <CardTitle className="text-sm font-medium">NewsAPI</CardTitle>
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.newsApiActive ? 'Activo' : 'Inactivo'}
-            </div>
+            <div className="text-2xl font-bold">{stats.totalNewsApiArticles}</div>
             <p className="text-xs text-muted-foreground">
-              Fuente principal de noticias 
+              Artículos de fuentes españolas e internacionales
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Artículos Scrapeados</CardTitle>
+            <CardTitle className="text-sm font-medium">Scraping</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalScrapedArticles}</div>
             <p className="text-xs text-muted-foreground">
-              Artículos extraídos de sitios web
+              Artículos extraídos localmente
             </p>
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fuentes Scraping</CardTitle>
+            <CardTitle className="text-sm font-medium">Fuentes</CardTitle>
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSources}</div>
             <p className="text-xs text-muted-foreground">
-              Sitios web configurados para scraping local
+              Sitios web configurados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Recientes</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.recentArticles}</div>
+            <p className="text-xs text-muted-foreground">
+              Últimas 24 horas
             </p>
           </CardContent>
         </Card>
@@ -154,7 +182,7 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
           <CardContent>
             <div className="text-2xl font-bold">{stats.enrichedArticles}</div>
             <p className="text-xs text-muted-foreground">
-              Artículos con análisis de IA
+              Con análisis de IA
             </p>
           </CardContent>
         </Card>
@@ -198,25 +226,28 @@ export default function DashboardPage() {  const [stats, setStats] = useState<Da
               </Button>
             </Link>
           </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
+        </Card>        <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
               Estado del Sistema
             </CardTitle>
             <CardDescription>
-              Sistema funcionando correctamente
+              Sistema funcionando con {stats.totalNewsApiArticles + stats.totalScrapedArticles} artículos totales
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <Badge variant="default" className="bg-green-100 text-green-800">
-                Operativo
+                {stats.newsApiActive ? 'NewsAPI Activo' : 'Solo Scraping'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-blue-600">
+                {stats.totalSources} fuentes
               </Badge>
               <span className="text-sm text-muted-foreground">
-                MongoDB conectado
+                configuradas
               </span>
             </div>
           </CardContent>

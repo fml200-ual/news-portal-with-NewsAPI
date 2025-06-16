@@ -1,7 +1,7 @@
 import type { NewsArticle } from '@/types';
 
 const BASE_URL = 'https://newsapi.org/v2';
-const API_KEY = process.env.NEXT_PUBLIC_NEWSAPI_KEY?.trim();
+const API_KEY = process.env.NEWSAPI_KEY?.trim() || process.env.NEXT_PUBLIC_NEWSAPI_KEY?.trim();
 
 if (typeof window !== 'undefined' && !API_KEY) {
   console.warn('NewsAPI key no está configurada. Por favor, configura NEXT_PUBLIC_NEWSAPI_KEY en tu archivo .env.local');
@@ -78,8 +78,100 @@ const transformArticleToNewsArticle = (article: NewsAPIArticle, category: string
   };
 };
 
-// Obtener noticias principales por categoría
-export const getNewsByCategory = async (category: string, page: number = 1): Promise<NewsArticle[]> => {
+// Configuración de dominios españoles por categoría
+const SPANISH_DOMAINS_BY_CATEGORY = {
+  'general': ['elpais.com', 'elmundo.es', 'abc.es', 'lavanguardia.com', '20minutos.es'],
+  'business': ['eleconomista.es', 'expansion.com', 'cincodias.elpais.com', 'elmundo.es'],
+  'sports': ['marca.com', 'as.com', 'sport.es', 'mundodeportivo.com'],
+  'technology': ['eleconomista.es', 'xataka.com', 'elpais.com', 'elmundo.es'],
+  'entertainment': ['elpais.com', 'elmundo.es', 'hola.com', 'semana.es'],
+  'health': ['elpais.com', 'elmundo.es', 'abc.es', 'lavanguardia.com'],
+  'science': ['elpais.com', 'elmundo.es', 'abc.es', 'agenciasinc.es'],
+  'all': ['elpais.com', 'elmundo.es', 'abc.es', 'lavanguardia.com', 'eleconomista.es', 'marca.com', 'as.com', '20minutos.es']
+};
+
+// Para compatibilidad con código existente
+const SPANISH_DOMAINS = SPANISH_DOMAINS_BY_CATEGORY.all.join(',');
+
+const INTERNATIONAL_SOURCES = [
+  'bbc-news',
+  'cnn',
+  'reuters',
+  'associated-press',
+  'the-guardian',
+  'abc-news',
+  'bloomberg',
+  'business-insider',
+  'financial-times',
+  'the-washington-post'
+].join(',');
+
+// Función para obtener noticias españolas por categoría específica usando múltiples dominios
+const fetchSpanishNewsByCategory = async (category: string, page: number = 1): Promise<NewsArticle[]> => {
+  try {
+    const domainsForCategory = SPANISH_DOMAINS_BY_CATEGORY[category as keyof typeof SPANISH_DOMAINS_BY_CATEGORY] || SPANISH_DOMAINS_BY_CATEGORY.general;
+    
+    console.log(`Fetching Spanish news for category ${category} from domains:`, domainsForCategory);
+    
+    const allArticles: NewsArticle[] = [];
+    
+    // Hacer llamadas paralelas a cada dominio
+    const promises = domainsForCategory.map(async (domain) => {
+      try {
+        // Usar /v2/everything con dominio específico
+        const url = `${BASE_URL}/everything?domains=${domain}&language=es&sortBy=publishedAt&pageSize=10&page=${page}&apiKey=${API_KEY}`;
+        
+        console.log(`Fetching from domain ${domain}:`, url);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`Error fetching from ${domain}: ${response.status}`);
+          return [];
+        }
+        
+        const data: NewsAPIResponse = await response.json();
+        
+        if (data.status !== 'ok' || !data.articles) {
+          console.warn(`No articles from domain ${domain}`);
+          return [];
+        }
+        
+        console.log(`Domain ${domain} returned ${data.articles.length} articles`);
+        
+        return data.articles.map(article => transformArticleToNewsArticle(article, category));
+      } catch (error) {
+        console.error(`Error fetching from domain ${domain}:`, error);
+        return [];
+      }
+    });
+    
+    // Esperar todas las promesas y combinar resultados
+    const results = await Promise.all(promises);
+    results.forEach(articles => allArticles.push(...articles));
+    
+    // Remover duplicados basados en URL
+    const uniqueArticles = allArticles.filter((article, index, self) => 
+      index === self.findIndex(a => a.url === article.url)
+    );
+    
+    // Ordenar por fecha de publicación (más recientes primero)
+    uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    
+    console.log(`Total unique Spanish articles for category ${category}: ${uniqueArticles.length}`);
+    
+    return uniqueArticles.slice(0, 20); // Limitar a 20 artículos por página
+  } catch (error) {
+    console.error(`Error fetching Spanish news for category ${category}:`, error);
+    return [];
+  }
+};
+
+// Obtener noticias principales por categoría con opción de región
+export const getNewsByCategory = async (
+  category: string, 
+  page: number = 1, 
+  region: 'spanish' | 'international' | 'all' = 'all'
+): Promise<NewsArticle[]> => {
   if (!API_KEY) {
     throw new Error('NewsAPI key no está configurada. Por favor, configura NEXT_PUBLIC_NEWSAPI_KEY en tu archivo .env.local');
   }
@@ -88,49 +180,33 @@ export const getNewsByCategory = async (category: string, page: number = 1): Pro
   if (!validCategories.includes(category)) {
     throw new Error(`Categoría inválida: ${category}`);
   }
-
-  // Mapear categorías a términos de búsqueda más relevantes
-  const categoryTerms: Record<string, string> = {
-    business: 'negocios OR empresas OR economia OR finanzas',
-    entertainment: 'entretenimiento OR cine OR television OR musica',
-    general: 'noticias OR actualidad',
-    health: 'salud OR medicina OR bienestar',
-    science: 'ciencia OR investigacion OR descubrimientos',
-    sports: 'deportes OR futbol OR olimpiadas',
-    technology: 'tecnologia OR innovacion OR digital',
-    all: 'noticias actualidad'
-  };
-  // Agregar la fecha de inicio (últimos 7 días)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  let articles: NewsArticle[] = [];
   
-  const params = new URLSearchParams({
-    q: categoryTerms[category],
-    language: 'es',
-    pageSize: '20', // Artículos por página
-    page: page.toString(), // Página actual
-    sortBy: 'publishedAt',
-    from: sevenDaysAgo.toISOString().split('T')[0],
-    apiKey: API_KEY,
-  });
   try {
-    // Usar el endpoint /everything en lugar de /top-headlines para búsqueda más amplia
-    const response = await fetch(`${BASE_URL}/everything?${params}`);
-    const data: NewsAPIResponse = await response.json();
-    
-    validateAPIResponse(response, data);
-
-    if (!data.articles || !Array.isArray(data.articles)) {
-      throw new Error('Formato de respuesta inválido');
+    if (region === 'spanish' || region === 'all') {
+      if (category === 'all' || category === 'general') {
+        // Para categoría general, usar dominios españoles con /v2/everything
+        const spanishArticles = await fetchSpanishNews(category, page);
+        articles = articles.concat(spanishArticles);
+      } else {
+        // Para categorías específicas, usar múltiples dominios españoles
+        const spanishArticles = await fetchSpanishNewsByCategory(category, page);
+        articles = articles.concat(spanishArticles);
+      }
     }
 
-    // Filtrar artículos sin imágenes
-    const articlesWithImages = data.articles
-      .filter(article => article.urlToImage);
+    if (region === 'international' || region === 'all') {
+      // Para fuentes internacionales, usar /v2/top-headlines con fuentes específicas
+      const internationalArticles = await fetchInternationalNews(category, page);
+      articles = articles.concat(internationalArticles);
+    }
 
-    return articlesWithImages.map(article => transformArticleToNewsArticle(article, category));
+    // Ordenar por fecha de publicación (más recientes primero)
+    articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+    return articles;
   } catch (error) {
-    console.error('NewsAPI error:', error);
+    console.error('Error al obtener noticias por categoría:', error);
     if (error instanceof Error) {
       throw error;
     }
@@ -138,7 +214,89 @@ export const getNewsByCategory = async (category: string, page: number = 1): Pro
   }
 };
 
-// Buscar noticias por términos y filtros
+// Función para obtener noticias españolas usando /v2/everything
+const fetchSpanishNews = async (category: string, page: number): Promise<NewsArticle[]> => {
+  if (!API_KEY) return [];
+
+  // Mapear categorías a términos de búsqueda en español
+  const categoryTerms: Record<string, string> = {
+    business: 'negocios OR empresas OR economia OR finanzas',
+    entertainment: 'entretenimiento OR cine OR television OR musica OR cultura',
+    general: 'noticias OR actualidad OR España',
+    health: 'salud OR medicina OR bienestar OR sanidad',
+    science: 'ciencia OR investigacion OR descubrimientos OR tecnologia',
+    sports: 'deportes OR futbol OR baloncesto OR tenis OR olimpiadas',
+    technology: 'tecnologia OR innovacion OR digital OR internet OR software',
+    all: 'España OR noticias OR actualidad'
+  };
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const params = new URLSearchParams({
+    q: categoryTerms[category],
+    domains: SPANISH_DOMAINS,
+    language: 'es',
+    pageSize: '20',
+    page: page.toString(),
+    sortBy: 'publishedAt',
+    from: sevenDaysAgo.toISOString().split('T')[0],
+    apiKey: API_KEY,
+  });
+
+  try {
+    const response = await fetch(`${BASE_URL}/everything?${params}`);
+    const data: NewsAPIResponse = await response.json();
+    
+    validateAPIResponse(response, data);
+    
+    if (!data.articles || !Array.isArray(data.articles)) {
+      return [];
+    }
+
+    // Filtrar artículos con imágenes
+    const articlesWithImages = data.articles.filter(article => article.urlToImage);
+    return articlesWithImages.map(article => transformArticleToNewsArticle(article, category));
+  } catch (error) {
+    console.error('Error fetching Spanish news:', error);
+    return [];
+  }
+};
+
+// Función para obtener noticias internacionales usando /v2/top-headlines
+const fetchInternationalNews = async (category: string, page: number): Promise<NewsArticle[]> => {
+  if (!API_KEY) return [];
+
+  const params = new URLSearchParams({
+    sources: INTERNATIONAL_SOURCES,
+    pageSize: '20',
+    page: page.toString(),
+    apiKey: API_KEY,
+  });
+
+  // Para top-headlines con sources no podemos usar country/category
+  // Solo usamos sources para fuentes específicas internacionales
+
+  try {
+    const response = await fetch(`${BASE_URL}/top-headlines?${params}`);
+    const data: NewsAPIResponse = await response.json();
+    
+    validateAPIResponse(response, data);
+    
+    if (!data.articles || !Array.isArray(data.articles)) {
+      return [];
+    }
+
+    // Filtrar artículos con imágenes
+    const articlesWithImages = data.articles.filter(article => article.urlToImage);
+    return articlesWithImages.map(article => transformArticleToNewsArticle(article, category));
+  } catch (error) {
+    console.error('Error fetching international news:', error);
+    return [];
+  }
+};
+
+// Buscar noticias por términos y filtros con soporte de región
 interface SearchNewsParams {
   q: string;                   // Término de búsqueda
   searchIn?: string;          // Buscar en: 'title' | 'description' | 'content'
@@ -151,6 +309,7 @@ interface SearchNewsParams {
   sortBy?: 'relevancy' | 'popularity' | 'publishedAt';
   pageSize?: number;          // Número de resultados por página (máx: 100)
   page?: number;              // Número de página
+  region?: 'spanish' | 'international' | 'all'; // Región de las fuentes
 }
 
 export const searchNews = async (query: string, options: Partial<SearchNewsParams> = {}): Promise<NewsArticle[]> => {
@@ -158,13 +317,28 @@ export const searchNews = async (query: string, options: Partial<SearchNewsParam
     throw new Error('NewsAPI key no está configurada');
   }
 
+  // Configurar idioma según la región
+  let language = options.language || 'es';
+  if (options.region === 'international') {
+    language = 'en'; // Para noticias internacionales usar inglés
+  }
+
   // Construir parámetros de búsqueda
   const searchParams = new URLSearchParams({
     apiKey: API_KEY,
     q: query,
-    language: options.language || 'es',
+    language: language,
     pageSize: (options.pageSize || 20).toString(),
-  });
+  });  // Configurar fuentes según la región
+  if (options.region === 'spanish') {
+    // Para fuentes españolas usar dominios españoles
+    searchParams.append('domains', SPANISH_DOMAINS);
+  } else if (options.region === 'international') {
+    // Para fuentes internacionales usar sources específicas
+    if (!options.sources) {
+      searchParams.append('sources', INTERNATIONAL_SOURCES);
+    }
+  }
 
   // Añadir parámetros opcionales si están presentes
   if (options.searchIn) searchParams.append('searchIn', options.searchIn);
@@ -205,8 +379,11 @@ export const searchNews = async (query: string, options: Partial<SearchNewsParam
 //   from: '2024-01-01'
 // });
 
-// Búsqueda simplificada solo con término y categoría
-export const searchNewsByCategory = async (category: string): Promise<NewsArticle[]> => {
+// Búsqueda simplificada solo con término y categoría con soporte de región
+export const searchNewsByCategory = async (
+  category: string, 
+  region: 'spanish' | 'international' | 'all' = 'all'
+): Promise<NewsArticle[]> => {
   // Mapeo de categorías a términos de búsqueda relevantes
   const categoryTerms: Record<string, string> = {
     business: 'negocios OR empresas OR economía',
@@ -221,16 +398,20 @@ export const searchNewsByCategory = async (category: string): Promise<NewsArticl
   const searchTerm = categoryTerms[category] || category;
   return searchNews(searchTerm, {
     sortBy: 'publishedAt',
-    language: 'es',
-    pageSize: 20
+    pageSize: 20,
+    region: region
   });
 };
 
-// Búsqueda con fuentes específicas
-export const searchNewsFromSources = async (query: string, sourceIds: string[]): Promise<NewsArticle[]> => {
+// Búsqueda con fuentes específicas y soporte de región
+export const searchNewsFromSources = async (
+  query: string, 
+  sourceIds: string[], 
+  region: 'spanish' | 'international' | 'all' = 'all'
+): Promise<NewsArticle[]> => {
   return searchNews(query, {
     sources: sourceIds.join(','),
-    language: 'es',
-    sortBy: 'publishedAt'
+    sortBy: 'publishedAt',
+    region: region
   });
 };

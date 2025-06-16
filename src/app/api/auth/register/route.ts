@@ -2,6 +2,66 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Registrar nuevo usuario
+ *     description: Crea una cuenta de usuario nueva en el sistema
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Nombre completo del usuario
+ *                 minLength: 2
+ *                 maxLength: 50
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Dirección de correo electrónico
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Contraseña del usuario
+ *                 minLength: 6
+ *     responses:
+ *       201:
+ *         description: Usuario registrado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Usuario registrado correctamente
+ *       400:
+ *         description: Datos inválidos o email ya registrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: El email ya está registrado
+ *       500:
+ *         description: Error del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();

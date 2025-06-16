@@ -1,10 +1,72 @@
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { DataSource } from '@/lib/models/DataSource';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { WebScraper, scrapingConfigs, createGenericConfig } from '@/services/scrapingService';
 import type { NewsArticle } from '@/types';
+
+/**
+ * @swagger
+ * /api/datasources/{id}/scrape:
+ *   post:
+ *     summary: Ejecutar scraping en una fuente de datos específica
+ *     tags: [DataSources, Scraping]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la fuente de datos
+ *     responses:
+ *       200:
+ *         description: Scraping ejecutado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Scraping completado. 15 artículos extraídos."
+ *                 itemsScraped:
+ *                   type: number
+ *                   example: 15
+ *                 method:
+ *                   type: string
+ *                   enum: [predefined, generic]
+ *                   example: "predefined"
+ *                 articles:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ScrapedItem'
+ *       404:
+ *         description: Fuente de datos no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Fuente de datos no encontrada"
+ *       500:
+ *         description: Error durante el scraping
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Error durante el scraping"
+ *                 details:
+ *                   type: string
+ *                   example: "Timeout al conectar con el sitio web"
+ */
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

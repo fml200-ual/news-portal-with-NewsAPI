@@ -14,9 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 type NewsCardProps = {
   article: NewsArticle;
   initialFavorite?: boolean;
+  className?: string;
 };
 
-export function NewsCard({ article, initialFavorite = false }: NewsCardProps) {
+export function NewsCard({ article, initialFavorite = false, className = '' }: NewsCardProps) {
   const { toast } = useToast();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,7 +86,7 @@ export function NewsCard({ article, initialFavorite = false }: NewsCardProps) {
   };
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden">
+    <Card className={`flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg overflow-hidden ${className}`}>
       <div className="relative w-full h-48">
         <Image
           src={article.imageUrl || getPlaceholderImage(article.category || 'general')}

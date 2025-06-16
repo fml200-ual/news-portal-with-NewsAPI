@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { Newspaper } from 'lucide-react'; // Changed icon
+import { Newspaper } from '@/components/ui/safe-icons';
 
 export function Navbar() {
   return (
@@ -19,6 +19,9 @@ export function Navbar() {
           </Link>
           <Link href="/dashboard" className="text-foreground hover:text-primary transition-colors">
             Estadísticas
+          </Link>
+          <Link href="/docs" className="text-blue-600 hover:text-blue-800">
+            📚 API Docs
           </Link>
         </div>
       </div>

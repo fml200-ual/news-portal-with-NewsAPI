@@ -1,4 +1,3 @@
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
@@ -14,6 +13,44 @@ const scrapedItemUpdateSchema = z.object({
   sentiment: z.enum(['positive', 'negative', 'neutral']).optional().nullable(),
   summary: z.string().optional().nullable(),
 });
+
+/**
+ * @swagger
+ * /api/scraped-items/{id}:
+ *   get:
+ *     summary: Obtener artículo scrapeado por ID
+ *     tags: [ScrapedItems]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del artículo scrapeado
+ *     responses:
+ *       200:
+ *         description: Artículo encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ScrapedItem'
+ *       404:
+ *         description: Artículo no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Artículo no encontrado"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Await params before using its properties
@@ -112,6 +149,89 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+/**
+ * @swagger
+ * /api/scraped-items/{id}:
+ *   put:
+ *     summary: Actualizar artículo scrapeado
+ *     tags: [ScrapedItems]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del artículo scrapeado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Título del artículo
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Descripción del artículo
+ *               content:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Contenido completo del artículo
+ *               category:
+ *                 type: string
+ *                 enum: [technology, business, sports, science, health, entertainment, general]
+ *                 description: Categoría del artículo
+ *               isEnriched:
+ *                 type: boolean
+ *                 description: Si el artículo ha sido enriquecido con IA
+ *               sentiment:
+ *                 type: string
+ *                 enum: [positive, negative, neutral]
+ *                 nullable: true
+ *                 description: Análisis de sentimiento
+ *               summary:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Resumen generado automáticamente
+ *     responses:
+ *       200:
+ *         description: Artículo actualizado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ScrapedItem'
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 errors:
+ *                   type: object
+ *       404:
+ *         description: Artículo no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Artículo no encontrado"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Await params before using its properties
   const { id } = await params;
@@ -137,3 +257,48 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     }, { status: 500 });
   }
 }
+
+/**
+ * @swagger
+ * /api/scraped-items/{id}:
+ *   delete:
+ *     summary: Eliminar artículo scrapeado
+ *     tags: [ScrapedItems]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del artículo scrapeado
+ *     responses:
+ *       200:
+ *         description: Artículo eliminado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Artículo eliminado correctamente"
+ *                 id:
+ *                   type: string
+ *                   example: "64f5b2c1a123456789abcdef"
+ *       404:
+ *         description: Artículo no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Artículo no encontrado"
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */

@@ -22,32 +22,75 @@ export class WebScraper {
   constructor(config: ScrapingConfig) {
     this.config = config;
   }
-
   async scrapeArticles(): Promise<NewsArticle[]> {
     try {
+      console.log(`🔍 Iniciando scraping de: ${this.config.url}`);
+      
       const response = await axios.get(this.config.url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+          'Accept-Encoding': 'gzip, deflate',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1'
         },
-        timeout: 15000
+        timeout: 20000,
+        maxRedirects: 5
       });
 
       const $ = cheerio.load(response.data);
       const articles: NewsArticle[] = [];
 
-      // Usar selector de contenedor específico o genérico
-      const containerSelector = this.config.selectors.container || 'article, .article, .news-item, .post, .story';
+      // Verificar si hay configuración específica para este sitio
+      const siteConfig = getSiteConfig(this.config.url);
       
-      $(containerSelector).each((index, element) => {
-        try {
-          const article = this.extractArticleData($, element);
-          if (article && article.title.length > 10) { // Filtrar títulos muy cortos
-            articles.push(article);
+      if (siteConfig) {
+        console.log(`📋 Usando configuración específica para: ${new URL(this.config.url).hostname}`);
+        
+        // Probar diferentes selectores de contenedor
+        for (const containerSelector of siteConfig.containerSelectors) {
+          const foundElements = $(containerSelector);
+          console.log(`🎯 Probando selector "${containerSelector}": ${foundElements.length} elementos`);
+          
+          if (foundElements.length > 0) {
+            foundElements.each((index, element) => {
+              try {
+                const article = this.extractArticleDataWithConfig($, element, siteConfig);
+                if (article && article.title.length > 10) {
+                  articles.push(article);
+                  console.log(`✅ Artículo extraído: ${article.title.substring(0, 50)}...`);
+                }
+              } catch (error) {
+                console.warn(`⚠️ Error extrayendo artículo ${index}:`, error);
+              }
+            });
+            
+            if (articles.length > 0) {
+              break; // Salir si encontramos artículos
+            }
           }
-        } catch (error) {
-          console.warn(`Error extrayendo artículo ${index}:`, error);
         }
-      });
+      } else {
+        // Usar selector de contenedor específico o genérico
+        const containerSelector = this.config.selectors.container || 'article, .article, .news-item, .post, .story, .noticia';
+        
+        console.log(`🎯 Buscando artículos con selector genérico: ${containerSelector}`);
+        const foundElements = $(containerSelector);
+        console.log(`📊 Encontrados ${foundElements.length} elementos potenciales`);
+
+        $(containerSelector).each((index, element) => {
+          try {
+            const article = this.extractArticleData($, element);
+            if (article && article.title.length > 10) {
+              articles.push(article);
+              console.log(`✅ Artículo extraído: ${article.title.substring(0, 50)}...`);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Error extrayendo artículo ${index}:`, error);
+          }
+        });
+      }
 
       // Si no encontramos artículos con contenedores, intentar con selectores directos
       if (articles.length === 0) {
@@ -109,6 +152,45 @@ export class WebScraper {
       title,
       description: description || '',
       content: description || '',
+      imageUrl: this.resolveUrl(imageUrl),
+      url: this.resolveUrl(link),
+      publishedAt: new Date().toISOString()
+    });
+  }
+
+  private extractArticleDataWithConfig($: cheerio.CheerioAPI, element: any, siteConfig: any): NewsArticle | null {
+    const $element = $(element);
+    
+    // Buscar título usando los selectores específicos del sitio
+    let title = '';
+    for (const titleSelector of siteConfig.titleSelectors) {
+      const foundTitle = this.extractText($, $element, titleSelector);
+      if (foundTitle && foundTitle.length > 10) {
+        title = foundTitle;
+        break;
+      }
+    }
+    
+    if (!title) return null;
+
+    // Buscar link usando los selectores específicos del sitio
+    let link = '';
+    for (const linkSelector of siteConfig.linkSelectors) {
+      const foundLink = this.extractAttribute($, $element, linkSelector, 'href');
+      if (foundLink) {
+        link = foundLink;
+        break;
+      }
+    }
+
+    // Buscar descripción en el contenedor
+    const description = this.extractText($, $element, 'p, .description, .summary, .lead, .excerpt') || '';
+    const imageUrl = this.extractAttribute($, $element, 'img', 'src') || '';
+
+    return this.createNewsArticle({
+      title: title.trim(),
+      description: description.trim(),
+      content: description.trim() || title.trim(),
       imageUrl: this.resolveUrl(imageUrl),
       url: this.resolveUrl(link),
       publishedAt: new Date().toISOString()
@@ -246,6 +328,78 @@ export const scrapingConfigs: Record<string, ScrapingConfig> = {
     baseUrl: 'https://20minutos.es'
   }
 };
+
+// Configuraciones específicas para sitios web problemáticos
+const SITE_CONFIGS = {
+  'eleconomista.es': {
+    containerSelectors: [
+      'article',
+      '.articleContent',
+      '.article',
+      '.noticia-home',
+      '.story-box', 
+      '.article-list-item',
+      '[data-test="story"]',
+      '.story',
+      '.noticia'
+    ],
+    titleSelectors: [
+      '.articleHeadline',
+      '.articleHeadline a',
+      'h2 a',
+      'h3 a', 
+      '.story-title a',
+      '.headline a',
+      '.titulo a',
+      'a[title]'
+    ],
+    linkSelectors: [
+      '.articleHeadline a',
+      'a[href*="/actualidad/"]',
+      'a[href*="/economia/"]',
+      'a[href*="/tecnologia/"]',
+      'h2 a',
+      'h3 a'
+    ]
+  },
+  '20minutos.es': {
+    containerSelectors: [
+      '.story',
+      '.article-item',
+      '.news-item',
+      '[data-module="story"]',
+      '.noticia',
+      'article',
+      '.story-box'
+    ],
+    titleSelectors: [
+      'h2 a',
+      'h3 a',
+      '.story-title a',
+      '.headline a',
+      '.titulo a',
+      'a[title]'
+    ],
+    linkSelectors: [
+      'a[href*="/noticia/"]',
+      'a[href*="/deportes/"]',
+      'a[href*="/nacional/"]',
+      'h2 a',
+      'h3 a'
+    ]
+  }
+};
+
+// Función para obtener configuración específica del sitio
+function getSiteConfig(url: string) {
+  const hostname = new URL(url).hostname;
+  for (const [domain, config] of Object.entries(SITE_CONFIGS)) {
+    if (hostname.includes(domain)) {
+      return config;
+    }
+  }
+  return null;
+}
 
 // Función para crear configuración genérica para cualquier sitio
 export function createGenericConfig(url: string): ScrapingConfig {
