@@ -1,6 +1,5 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { DataSource } from '@/lib/models/DataSource';
 import { z } from 'zod';
 
@@ -96,6 +95,8 @@ const dataSourceSchema = z.object({
  */
 export async function GET() {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     const dataSources = await DataSource.find({}).sort({ createdAt: -1 });
     return NextResponse.json(dataSources);
@@ -196,6 +197,8 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const body = await request.json();

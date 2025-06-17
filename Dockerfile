@@ -32,9 +32,13 @@ ENV NODE_ENV=production \
     PORT=3000
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Next.js build files
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Create empty public directory if it doesn't exist
+RUN mkdir -p ./public
 RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
 USER nextjs
 EXPOSE 3000

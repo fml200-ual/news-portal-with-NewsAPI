@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 
 /**
@@ -70,9 +69,10 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { message: 'Todos los campos son requeridos' },
         { status: 400 }
-      );
-    }
+      );    }
 
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
 
     // Verificar si el usuario ya existe

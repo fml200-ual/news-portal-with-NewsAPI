@@ -35,3 +35,9 @@ export async function connectToDatabase() {
   cached.conn = await cached.promise;
   return cached.conn;
 }
+
+// Función para importación dinámica de la conexión a MongoDB
+export async function connectToDatabaseLazy() {
+  const { connectToDatabase } = await import('@/lib/mongodb');
+  return connectToDatabase();
+}

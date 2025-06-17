@@ -11,7 +11,7 @@ export default function Home() {
           Portal de Noticias
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Tu centro de noticias con scraping real de sitios españoles, organizado y enriquecido con IA.
+          Tu centro de noticias que integra NewsAPI con scraping real de sitios españoles.
         </p>
       </header>      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">

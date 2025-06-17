@@ -6,38 +6,6 @@ const options = {
     info: {
       title: '📰 Studio News API',
       version: '1.0.0',
-      description: `
-## 🚀 API de Studio News - Plataforma de Agregación de Noticias
-
-### 📖 Descripción
-Esta API permite la gestión completa de fuentes de datos, extracción de contenido mediante web scraping, 
-integración con NewsAPI y gestión de preferencias de usuario para una plataforma de noticias moderna.
-
-### ✨ Características Principales
-- 🗂️ **Gestión de Fuentes de Datos**: Crear y administrar fuentes de web scraping
-- 🔍 **Web Scraping Inteligente**: Extracción automática de contenido web
-- 📰 **Integración NewsAPI**: Acceso a noticias internacionales con caché optimizado
-- ⭐ **Sistema de Favoritos**: Gestión personalizada de artículos favoritos
-- 👤 **Preferencias de Usuario**: Configuración personalizable del usuario
-- 🤖 **Enriquecimiento con IA**: Procesamiento automático de contenido
-- 🔐 **Autenticación Segura**: Sistema de sesiones con NextAuth
-
-### 🛠️ Tecnologías
-- **Framework**: Next.js 15 con App Router
-- **Base de Datos**: MongoDB con Mongoose
-- **Autenticación**: NextAuth.js
-- **Scraping**: Puppeteer
-- **IA**: Google Genkit
-- **Documentación**: Swagger/OpenAPI 3.0
-
-### 🌍 Entornos
-- **Desarrollo**: http://localhost:3000
-- **Producción**: https://studio-news.vercel.app
-
-### 📚 Guías Rápidas
-Para empezar a usar la API, consulta los endpoints organizados por categorías a continuación.
-Todos los endpoints que requieren autenticación están marcados con 🔒.
-      `,
       termsOfService: 'https://studio-news.com/terms',
       contact: {
         name: '📧 Studio News API Support',

@@ -1,5 +1,6 @@
+version: '3.8'
+
 services:
-  # Base de datos MongoDB
   mongodb:
     image: mongo:7.0
     container_name: studio-mongodb
@@ -7,47 +8,43 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password123
-      MONGO_INITDB_DATABASE: newsapi
+      - MONGO_INITDB_DATABASE=newsapi
     volumes:
       - mongodb_data:/data/db
     networks:
       - studio-network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 15s
       timeout: 10s
       retries: 5
+      start_period: 40s
 
-  # Aplicación Next.js
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        - NODE_ENV=production
+        NODE_ENV: production
     container_name: studio-app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "9002:9002"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=9002
       - HOSTNAME=0.0.0.0
-      # MongoDB connection (using Docker network)
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/newsapi?authSource=admin
-      # App URL for internal server-side fetches
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-      # NewsAPI key (set this in your .env.local or pass as build arg)
+      - MONGODB_URI=mongodb://mongodb:27017/newsapi
+      - NEXT_PUBLIC_APP_URL=http://localhost:9002
       - NEXT_PUBLIC_NEWSAPI_KEY=${NEXT_PUBLIC_NEWSAPI_KEY:-your_newsapi_key_here}
+      - NEXT_TELEMETRY_DISABLED=1
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - studio-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:9002/api/health", "||", "exit", "1"]
       interval: 30s
       timeout: 10s
       retries: 5

@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 
 // Servicio de enriquecimiento básico
@@ -43,6 +42,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const item = await ScrapedItem.findById(id);

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 
 /**
  * @swagger
@@ -67,7 +66,8 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET() {
   try {
-    // Check database connection
+    // Check database connection with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     return NextResponse.json({

@@ -53,6 +53,32 @@ interface NewDataSource {
 
 const predefinedSources = [
   {
+    name: "20 Minutos",
+    url: "https://20minutos.es",
+    config: {
+      contentSelector: "article, .media-news, .story",
+      titleSelector: "h2 a, h1, .media-news-title, .story-title",
+      summarySelector: ".media-news-summary, .entradilla, .story-summary",
+      linkSelector: "h2 a, .media-news-title a, .story-title a",
+      imageSelector: "img",
+      useFullUrl: true,
+      maxItems: 20
+    }
+  },
+  {
+    name: "El Economista",
+    url: "https://eleconomista.es",
+    config: {
+      contentSelector: "article, .articleContent, .story-box",
+      titleSelector: ".articleHeadline, .articleHeadline a, h2 a, .story-title",
+      summarySelector: ".description, .summary, .story-summary",
+      linkSelector: ".articleHeadline a, h2 a, .story-title a",
+      imageSelector: "img",
+      useFullUrl: true,
+      maxItems: 20
+    }
+  },
+  {
     name: "El País",
     url: "https://elpais.com",
     config: {
@@ -279,8 +305,7 @@ export default function DataSourcesPage() {
             </h1>
             <p className="text-lg text-muted-foreground mt-2">
               Gestiona las fuentes de noticias y ejecuta scraping en tiempo real
-            </p>
-          </div>
+            </p>          </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -395,6 +420,9 @@ export default function DataSourcesPage() {
         </div>
       </header>
 
+      
+
+      {/* Listado de fuentes existentes */}
       {dataSources.length === 0 ? (
         <div className="text-center py-12">
           <Globe className="w-16 h-16 mx-auto text-gray-400 mb-4" />

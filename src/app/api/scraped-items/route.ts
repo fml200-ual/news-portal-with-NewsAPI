@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { DataSource } from '@/lib/models/DataSource';
 
@@ -113,6 +112,8 @@ import { DataSource } from '@/lib/models/DataSource';
 
 export async function GET(request: NextRequest) {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const { searchParams } = new URL(request.url);

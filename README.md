@@ -1,4 +1,4 @@
-# 📰 Studio News App
+# 📰 News Portal App
 
 Una aplicación completa de noticias que combina NewsAPI con scraping local, construida con Next.js 15, TypeScript, MongoDB y Docker.
 
@@ -6,51 +6,12 @@ Una aplicación completa de noticias que combina NewsAPI con scraping local, con
 
 - 🌍 **API Externa**: Integración con NewsAPI.org para noticias internacionales
 - 🔍 **Scraping Web**: Extracción de noticias de fuentes españolas (El País, El Mundo, 20 Minutos, El Economista)
-- 🔄 **Sistema Híbrido**: Combina ambas fuentes con deduplicación inteligente
+- 🔄 **Sistema Híbrido**: Combina ambas fuentes evitando duplicación de noticias
 - 📊 **Dashboard Completo**: Estadísticas y gestión de fuentes de datos
 - 🎨 **UI Moderna**: Interfaz con Tailwind CSS y shadcn/ui
 - 🐳 **Docker Ready**: Configuración completa para producción y desarrollo
-- 🔐 **Base de Datos**: MongoDB con modelos optimizados
+- 🔐 **Base de Datos**: MongoDB con modelos optimizados utilizando Mongoose
 - 🚀 **API REST**: Endpoints completos para CRUD y gestión
-
-## 🚀 Inicio Rápido con Docker
-
-### Prerrequisitos
-
-- Docker Desktop instalado
-- Al menos 2GB de RAM libre
-- Puertos 3000 y 27017 disponibles
-
-### 1. Configuración
-
-```powershell
-# Clonar el repositorio
-git clone <tu-repo>
-cd studio
-
-# Configurar variables de entorno
-cp .env.example .env.local
-# Editar .env.local con tu NewsAPI key
-```
-
-### 2. Ejecutar con Docker
-
-```powershell
-# Iniciar todos los servicios
-docker-compose up -d --build
-
-# Verificar estado
-docker-compose ps
-
-# Ver logs
-docker-compose logs -f
-```
-
-### 3. Verificar
-
-- **Aplicación**: http://localhost:3000
-- **Health Check**: http://localhost:3000/api/health
-- **MongoDB**: localhost:27017
 
 ## 🛠️ Desarrollo Local
 
@@ -67,58 +28,14 @@ npm install
 npm run dev
 ```
 
-### Con Docker (Hot-reload)
-
-```powershell
-# Usar configuración de desarrollo
-docker-compose -f docker-compose.dev.yml up -d --build
-```
-
-## 📋 Scripts de Gestión
-
-### PowerShell (Windows)
-
-```powershell
-# Iniciar servicios
-.\docker-manager.ps1 start
-
-# Ver estado
-.\docker-manager.ps1 status
-
-# Ver logs
-.\docker-manager.ps1 logs
-
-# Detener servicios
-.\docker-manager.ps1 stop
-
-# Backup de base de datos
-.\docker-manager.ps1 backup
-
-# Ayuda
-.\docker-manager.ps1 help
-```
-
-### Bash (Linux/macOS)
-
-```bash
-# Hacer ejecutable
-chmod +x docker-manager.sh
-
-# Iniciar servicios
-./docker-manager.sh start
-
-# Ver estado
-./docker-manager.sh status
-```
-
 ## 🏗️ Arquitectura
 
 ### Tecnologías
 
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API Routes, MongoDB, Mongoose
-- **Scraping**: Cheerio, Puppeteer
-- **Externa**: NewsAPI.org
+- **Scraping**: Cheerio
+- **API Externa**: NewsAPI.org
 - **Contenedores**: Docker, Docker Compose
 
 ### Estructura de Servicios
@@ -126,7 +43,7 @@ chmod +x docker-manager.sh
 ```
 ┌─────────────────┐    ┌─────────────────┐
 │   Next.js App   │◄──►│    MongoDB      │
-│   (Puerto 3000) │    │  (Puerto 27017) │
+│   (Puerto 9002) │    │  (Puerto 27017) │
 └─────────────────┘    └─────────────────┘
          │
          ▼
@@ -148,12 +65,18 @@ chmod +x docker-manager.sh
 - Búsqueda híbrida
 - Listado con paginación infinita
 - Favoritos
+- Búsqueda específica
+- Diferenciación de noticias por medios españoles o internacionales
+
+### Perfil personal
+- Gestionar tus noticias favoritas
+- Gestionar tu información
+- Modo claro y oscuro seleccionables
 
 ### Administración
 - CRUD de fuentes de datos
 - Configuración de scrapers
-- Enriquecimiento de artículos
-- Gestión de selectores CSS
+- Gestión de selectores CSS para Scraping
 
 ### APIs Disponibles
 
@@ -168,79 +91,7 @@ chmod +x docker-manager.sh
 - `PUT /api/datasources/[id]` - Actualizar fuente
 - `DELETE /api/datasources/[id]` - Eliminar fuente
 - `POST /api/datasources/[id]/scrape` - Ejecutar scraping
-- `POST /api/scraped-items/[id]/enrich` - Enriquecer artículo
-
-## 🚀 Deployment
-
-### Deployment en Vercel
-
-#### Preparación del Código
-
-El proyecto está optimizado para Next.js 15 y listo para deployment:
-
-```bash
-# 1. Verificar que el build funciona localmente
-npm run build
-
-# 2. Asegurar que todas las dependencias están instaladas
-npm install
-```
-
-#### Configurar Variables de Entorno en Vercel
-
-1. **Ir a Vercel Dashboard** → Crear nuevo proyecto
-2. **Conectar repositorio GitHub**
-3. **Configurar variables de entorno**:
-
-```env
-MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/newsapi
-NEXTAUTH_SECRET=tu_secret_super_seguro_aqui
-NEXTAUTH_URL=https://tu-app.vercel.app
-NEWS_API_KEY=tu_api_key_de_newsapi
-```
-
-#### Desplegar
-
-```bash
-# Instalar Vercel CLI (opcional)
-npm i -g vercel
-
-# Deploy desde línea de comandos
-vercel --prod
-
-# O usar GitHub integration automática
-git push origin main
-```
-
-#### Configuración MongoDB Atlas
-
-Para production, usar MongoDB Atlas:
-
-1. **Crear cluster** en [MongoDB Atlas](https://cloud.mongodb.com)
-2. **Configurar Network Access** (permitir 0.0.0.0/0 para Vercel)
-3. **Crear usuario** con permisos de lectura/escritura
-4. **Obtener connection string** y configurar en `MONGODB_URI`
-
-### Docker Deployment (Alternativo)
-
-Ver guía completa en [DOCKER_SETUP.md](./DOCKER_SETUP.md)
-
-## 🔧 Configuración
-
-### Variables de Entorno
-
-```env
-# Base de datos
-MONGODB_URI=mongodb://admin:password123@mongodb:27017/newsapi?authSource=admin
-
-# NewsAPI
-NEXT_PUBLIC_NEWSAPI_KEY=tu_api_key_aqui
-
-# Aplicación
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NODE_ENV=production
-PORT=3000
-```
+- `POST /api/scraped-items/[id]/enrich` - Enriquecer artículo (sin terminar)
 
 ### Fuentes de Scraping Predefinidas
 
@@ -256,67 +107,6 @@ PORT=3000
 - **Aplicación**: Conectividad HTTP y base de datos
 - **MongoDB**: Disponibilidad del servicio
 - **Intervalos**: 30 segundos con 5 reintentos
-
-### Logs
-
-```powershell
-# Logs en tiempo real
-docker-compose logs -f
-
-# Logs específicos
-docker-compose logs -f app
-docker-compose logs -f mongodb
-
-# Logs con timestamps
-docker-compose logs -f -t
-```
-
-## 🔄 Backup y Restauración
-
-### Crear Backup
-
-```powershell
-# Con script
-.\docker-manager.ps1 backup
-
-# Manual
-docker-compose exec mongodb mongodump --uri="mongodb://admin:password123@localhost:27017/newsapi?authSource=admin" --out=/tmp/backup
-```
-
-### Restaurar
-
-```powershell
-# Restaurar desde backup
-docker-compose exec mongodb mongorestore --uri="mongodb://admin:password123@localhost:27017/newsapi?authSource=admin" /tmp/backup/newsapi
-```
-
-## 🚨 Troubleshooting
-
-### Problemas Comunes
-
-1. **Puerto en uso**:
-   ```powershell
-   # Cambiar puerto en docker-compose.yml
-   ports:
-     - "3001:3000"
-   ```
-
-2. **Memoria insuficiente**:
-   - Aumentar memoria de Docker Desktop (4GB+)
-
-3. **Base de datos no conecta**:
-   ```powershell
-   # Verificar logs
-   docker-compose logs mongodb
-   
-   # Recrear volumen
-   docker-compose down -v
-   docker-compose up -d
-   ```
-
-4. **NewsAPI no funciona**:
-   - Verificar API key en `.env.local`
-   - Comprobar límites de la API
 
 ## 📝 Desarrollo
 
@@ -348,40 +138,3 @@ src/
 2. Definir tipos en `src/types/`
 3. Añadir validación con Zod
 4. Documentar en swagger (opcional)
-
-## 🤝 Contribuir
-
-1. Fork del repositorio
-2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit cambios (`git commit -am 'Añadir nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Crear Pull Request
-
-## 📄 Licencia
-
-MIT License - ver archivo LICENSE para detalles.
-
-## 🔗 Enlaces Útiles
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [NewsAPI Documentation](https://newsapi.org/docs)
-- [MongoDB Documentation](https://docs.mongodb.com/)
-- [Docker Documentation](https://docs.docker.com/)
-- [Docker Setup Guide](./DOCKER_SETUP.md)
-
----
-
-## ✅ Estado del Proyecto
-
-**🎯 Completado (8/8 tareas):**
-
-- ✅ API de terceros externa (NewsAPI)
-- ✅ Scraping de datos reales
-- ✅ API REST de consulta
-- ✅ API REST de modificación
-- ✅ Listados en frontend
-- ✅ Edición en frontend
-- ✅ Dockerfile optimizado
-- ✅ Docker Compose completo
-
-**🚀 ¡Aplicación lista para producción!**

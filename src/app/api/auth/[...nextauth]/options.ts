@@ -1,7 +1,6 @@
 import { NextAuthOptions, Session, User as NextAuthUser, DefaultUser } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { User } from '@/lib/models/User';
-import { connectToDatabase } from '@/lib/mongodb';
 
 // Extiende los tipos de sesión y usuario para incluir 'id'
 declare module 'next-auth' {
@@ -25,12 +24,13 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Contraseña", type: "password" }
-      },
-      async authorize(credentials) {
+      },      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email y contraseña son requeridos');
         }
 
+        // Connect to database with lazy loading
+        const { connectToDatabase } = await import('@/lib/mongodb');
         await connectToDatabase();
         
         const user = await User.findOne({ email: credentials.email });

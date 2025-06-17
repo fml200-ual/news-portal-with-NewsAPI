@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { DataSource } from '@/lib/models/DataSource';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { WebScraper, scrapingConfigs, createGenericConfig } from '@/services/scrapingService';
@@ -73,6 +72,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     // Await params before using its properties
     const { id } = await params;
     
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const dataSource = await DataSource.findById(id);

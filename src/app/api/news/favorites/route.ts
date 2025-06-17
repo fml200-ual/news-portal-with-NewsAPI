@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/options';
@@ -54,6 +53,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ status: "error", message: "No autorizado" }, { status: 401 });
     }
 
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     const user = await User.findById(session.user.id);
 
@@ -133,6 +134,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "error", message: "No autorizado" }, { status: 401 });
     }
 
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     const { article } = await request.json();
 
@@ -217,6 +220,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ status: "error", message: "No autorizado" }, { status: 401 });
     }
 
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     const { articleId } = await request.json();
 

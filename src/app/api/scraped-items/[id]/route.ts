@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { z } from 'zod';
 
@@ -57,6 +56,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id } = await params;
   
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const item = await ScrapedItem.findById(id);
@@ -96,6 +97,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const body = await request.json();
@@ -235,8 +238,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // Await params before using its properties
   const { id } = await params;
-  
-  try {
+    try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
     
     const deletedItem = await ScrapedItem.findByIdAndDelete(id);

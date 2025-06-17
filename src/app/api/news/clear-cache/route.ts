@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { Article } from '@/lib/models/Article';
 
 /**
@@ -31,6 +30,8 @@ import { Article } from '@/lib/models/Article';
  */
 export async function DELETE() {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
 
     // Eliminar todos los artículos de NewsAPI para forzar refresh

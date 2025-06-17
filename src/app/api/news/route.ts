@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { connectToDatabase } from '@/lib/mongodb';
 import { Article } from '@/lib/models/Article';
 import { ScrapedItem } from '@/lib/models/ScrapedItem';
 import { getNewsByCategory } from '@/services/newsService';
@@ -370,6 +369,8 @@ async function fetchFromAPI(query: string, category: string, page: number, pageS
  */
 export async function GET(request: Request) {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
 
     const { searchParams } = new URL(request.url);
@@ -522,6 +523,8 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    // Connect to database with lazy loading
+    const { connectToDatabase } = await import('@/lib/mongodb');
     await connectToDatabase();
 
     const body = await request.json();
